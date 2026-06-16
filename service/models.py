@@ -1,5 +1,5 @@
 """
-Models for YourResourceModel
+Models for Customers
 
 All of the models are stored in this module
 """
@@ -14,86 +14,114 @@ db = SQLAlchemy()
 
 
 class DataValidationError(Exception):
-    """Used for an data validation errors when deserializing"""
+    """Used for data validation errors when deserializing"""
 
 
-class YourResourceModel(db.Model):
+class Customer(db.Model):
     """
-    Class that represents a YourResourceModel
+    Class that represents a Customer
     """
 
     ##################################################
     # Table Schema
     ##################################################
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(63))
 
-    # Todo: Place the rest of your schema here...
+    __tablename__ = "customers"
+
+    user_id = db.Column(db.String(63), primary_key=True)
+    first_name = db.Column(db.String(63), nullable=False)
+    last_name = db.Column(db.String(63), nullable=False)
+    address = db.Column(db.String(256), nullable=False)
 
     def __repr__(self):
-        return f"<YourResourceModel {self.name} id=[{self.id}]>"
+        return f"<Customer {self.user_id}: {self.first_name} {self.last_name}>"
 
     def create(self):
-        """
-        Creates a YourResourceModel to the database
-        """
-        logger.info("Creating %s", self.name)
-        self.id = None  # pylint: disable=invalid-name
+        """Creates a Customer in the database"""
+        logger.info("Creating customer %s", self.user_id)
+
         try:
             db.session.add(self)
             db.session.commit()
-        except Exception as e:
+        except Exception as error:
             db.session.rollback()
-            logger.error("Error creating record: %s", self)
-            raise DataValidationError(e) from e
+            logger.error("Error creating customer: %s", self)
+            raise DataValidationError(error) from error
 
     def update(self):
-        """
-        Updates a YourResourceModel to the database
-        """
-        logger.info("Saving %s", self.name)
+        """Updates a Customer in the database"""
+        logger.info("Saving customer %s", self.user_id)
+
         try:
             db.session.commit()
-        except Exception as e:
+        except Exception as error:
             db.session.rollback()
-            logger.error("Error updating record: %s", self)
-            raise DataValidationError(e) from e
+            logger.error("Error updating customer: %s", self)
+            raise DataValidationError(error) from error
 
     def delete(self):
-        """Removes a YourResourceModel from the data store"""
-        logger.info("Deleting %s", self.name)
+        """Removes a Customer from the database"""
+        logger.info("Deleting customer %s", self.user_id)
+
         try:
             db.session.delete(self)
             db.session.commit()
-        except Exception as e:
+        except Exception as error:
             db.session.rollback()
-            logger.error("Error deleting record: %s", self)
-            raise DataValidationError(e) from e
+            logger.error("Error deleting customer: %s", self)
+            raise DataValidationError(error) from error
 
     def serialize(self):
-        """Serializes a YourResourceModel into a dictionary"""
-        return {"id": self.id, "name": self.name}
+        """Serializes a Customer into a dictionary"""
+        return {
+            "user_id": self.user_id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "address": self.address,
+        }
 
     def deserialize(self, data):
         """
-        Deserializes a YourResourceModel from a dictionary
+        Deserializes a Customer from a dictionary
 
         Args:
-            data (dict): A dictionary containing the resource data
+            data (dict): A dictionary containing the customer data
         """
         try:
-            self.name = data["name"]
+            if not isinstance(data, dict):
+                raise TypeError("Invalid data type")
+
+            self.user_id = data["user_id"]
+            self.first_name = data["first_name"]
+            self.last_name = data["last_name"]
+            self.address = data["address"]
+
+            if not isinstance(self.user_id, str) or not self.user_id.strip():
+                raise TypeError("user_id must be a non-empty string")
+
+            if not isinstance(self.first_name, str) or not self.first_name.strip():
+                raise TypeError("first_name must be a non-empty string")
+
+            if not isinstance(self.last_name, str) or not self.last_name.strip():
+                raise TypeError("last_name must be a non-empty string")
+
+            if not isinstance(self.address, str) or not self.address.strip():
+                raise TypeError("address must be a non-empty string")
+
         except AttributeError as error:
-            raise DataValidationError("Invalid attribute: " + error.args[0]) from error
+            raise DataValidationError(
+                "Invalid attribute: " + error.args[0]
+            ) from error
         except KeyError as error:
             raise DataValidationError(
-                "Invalid YourResourceModel: missing " + error.args[0]
+                "Invalid Customer: missing " + error.args[0]
             ) from error
         except TypeError as error:
             raise DataValidationError(
-                "Invalid YourResourceModel: body of request contained bad or no data "
+                "Invalid Customer: body of request contained bad or no data "
                 + str(error)
             ) from error
+
         return self
 
     ##################################################
@@ -102,22 +130,17 @@ class YourResourceModel(db.Model):
 
     @classmethod
     def all(cls):
-        """Returns all of the YourResourceModels in the database"""
-        logger.info("Processing all YourResourceModels")
+        """Returns all Customers in the database"""
+        logger.info("Processing all customers")
         return cls.query.all()
 
     @classmethod
-    def find(cls, by_id):
-        """Finds a YourResourceModel by it's ID"""
-        logger.info("Processing lookup for id %s ...", by_id)
-        return cls.query.session.get(cls, by_id)
+    def find(cls, user_id):
+        """Finds a Customer by user_id"""
+        logger.info("Processing lookup for user_id %s ...", user_id)
+        return cls.query.session.get(cls, user_id)
 
-    @classmethod
-    def find_by_name(cls, name):
-        """Returns all YourResourceModels with the given name
 
-        Args:
-            name (string): the name of the YourResourceModels you want to match
-        """
-        logger.info("Processing name query for %s ...", name)
-        return cls.query.filter(cls.name == name)
+# Temporary compatibility alias for the original template.
+# This prevents old template imports from breaking before route stories are done.
+YourResourceModel = Customer
