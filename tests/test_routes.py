@@ -76,8 +76,6 @@ class TestYourResourceService(TestCase):
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    # Todo: Add your test cases here...
-
     ######################################################################
     #  C R E A T E   C U S T O M E R   T E S T S
     ######################################################################
