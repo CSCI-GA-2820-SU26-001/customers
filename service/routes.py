@@ -23,7 +23,7 @@ and Delete YourResourceModel
 
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import YourResourceModel
+from service.models import Customer, DataValidationError
 from service.common import status  # HTTP Status Codes
 
 
@@ -44,3 +44,52 @@ def index():
 ######################################################################
 
 # Todo: Place your REST API code here ...
+
+
+######################################################################
+#  C R E A T E   C U S T O M E R
+######################################################################
+def check_content_type(content_type):
+    """Checks that the media type is correct"""
+    if "Content-Type" not in request.headers:
+        app.logger.error("No Content-Type specified.")
+        abort(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            f"Content-Type must be {content_type}",
+        )
+
+    if request.headers["Content-Type"] == content_type:
+        return
+
+    app.logger.error("Invalid Content-Type: %s", request.headers["Content-Type"])
+    abort(
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        f"Content-Type must be {content_type}",
+    )
+
+
+@app.route("/customers", methods=["POST"])
+def create_customer():
+    """Create a Customer"""
+    app.logger.info("Request to create a customer")
+
+    check_content_type("application/json")
+
+    customer = Customer()
+
+    try:
+        customer.deserialize(request.get_json())
+    except DataValidationError as error:
+        abort(status.HTTP_400_BAD_REQUEST, str(error))
+
+    if Customer.find(customer.user_id):
+        abort(
+            status.HTTP_409_CONFLICT,
+            f"Customer with user_id '{customer.user_id}' already exists.",
+        )
+
+    customer.create()
+
+    app.logger.info("Customer with user_id %s created.", customer.user_id)
+
+    return jsonify(customer.serialize()), status.HTTP_201_CREATED
