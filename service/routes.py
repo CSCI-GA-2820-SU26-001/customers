@@ -91,3 +91,29 @@ def create_customer():
     app.logger.info("Customer with user_id %s created.", customer.user_id)
 
     return jsonify(customer.serialize()), status.HTTP_201_CREATED
+
+
+######################################################################
+#  D E L E T E   C U S T O M E R
+######################################################################
+@app.route("/customers/<string:user_id>", methods=["DELETE"])
+def delete_customer(user_id):
+    """
+    Delete a Customer
+
+    This endpoint will delete a Customer based on the user_id provided.
+    Returns 204 No Content whether or not the customer existed (idempotent).
+    """
+    app.logger.info("Request to delete customer with user_id: %s", user_id)
+
+    customer = Customer.find(user_id)
+    if customer:
+        customer.delete()
+        app.logger.info("Customer with user_id %s deleted.", user_id)
+    else:
+        app.logger.info(
+            "Customer with user_id %s not found — no action taken (idempotent).",
+            user_id,
+        )
+
+    return "", status.HTTP_204_NO_CONTENT
