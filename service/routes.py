@@ -94,6 +94,37 @@ def create_customer():
 
 
 ######################################################################
+#  U P D A T E   C U S T O M E R
+######################################################################
+@app.route("/customers/<string:user_id>", methods=["PUT"])
+def update_customer(user_id):
+    """
+    Update an existing Customer
+    """
+    app.logger.info("Request to update customer with user_id: %s", user_id)
+
+    check_content_type("application/json")
+
+    customer = Customer.find(user_id)
+
+    if not customer:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Customer with user_id '{user_id}' was not found.",
+        )
+
+    try:
+        data = request.get_json()
+        data["user_id"] = user_id  # URL is source of truth
+        customer.deserialize(data)
+    except DataValidationError as error:
+        abort(status.HTTP_400_BAD_REQUEST, str(error))
+
+    customer.update()
+
+    app.logger.info("Customer with user_id %s updated.", user_id)
+
+    return jsonify(customer.serialize()), status.HTTP_200_OK
 #  D E L E T E   C U S T O M E R
 ######################################################################
 @app.route("/customers/<string:user_id>", methods=["DELETE"])
