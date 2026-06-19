@@ -24,7 +24,11 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db, YourResourceModel
+from service.models import db, Customer
+from .factories import CustomerFactory
+
+BASE_URL = "/customers"
+
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -56,7 +60,7 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
-        db.session.query(YourResourceModel).delete()  # clean up the last tests
+        db.session.query(Customer).delete()  # clean up the last tests
         db.session.commit()
 
     def tearDown(self):
@@ -72,4 +76,51 @@ class TestYourResourceService(TestCase):
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    # Todo: Add your test cases here...
+    ######################################################################
+    #  C R E A T E   C U S T O M E R   T E S T S
+    ######################################################################
+    def test_create_customer(self):
+        """It should Create a new Customer"""
+        customer = CustomerFactory()
+        response = self.client.post(BASE_URL, json=customer.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.get_json()
+        self.assertEqual(data["user_id"], customer.user_id)
+        self.assertEqual(data["first_name"], customer.first_name)
+        self.assertEqual(data["last_name"], customer.last_name)
+        self.assertEqual(data["address"], customer.address)
+
+        new_customer = Customer.find(customer.user_id)
+        self.assertIsNotNone(new_customer)
+        self.assertEqual(new_customer.user_id, customer.user_id)
+
+    def test_create_customer_missing_field(self):
+        """It should not Create a Customer with missing required data"""
+        customer = CustomerFactory()
+        data = customer.serialize()
+        data.pop("first_name")
+
+        response = self.client.post(BASE_URL, json=data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_customer_bad_content_type(self):
+        """It should not Create a Customer with bad content type"""
+        customer = CustomerFactory()
+
+        response = self.client.post(
+            BASE_URL,
+            data=str(customer.serialize()),
+            content_type="text/plain",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_duplicate_customer(self):
+        """It should not Create a Customer with duplicate user_id"""
+        customer = CustomerFactory()
+        customer.create()
+
+        response = self.client.post(BASE_URL, json=customer.serialize())
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
