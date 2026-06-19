@@ -124,3 +124,94 @@ class TestYourResourceService(TestCase):
         response = self.client.post(BASE_URL, json=customer.serialize())
 
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
+    ######################################################################
+    #  U P D A T E   C U S T O M E R   T E S T S
+    ######################################################################
+
+    def test_update_customer(self):
+        """It should Update an existing Customer"""
+
+        customer = CustomerFactory()
+        customer.create()
+
+        update_data = customer.serialize()
+        update_data["first_name"] = "Updated"
+        update_data["last_name"] = "Customer"
+        update_data["address"] = "456 Updated Street"
+
+        response = self.client.put(f"{BASE_URL}/{customer.user_id}", json=update_data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+
+        self.assertEqual(data["user_id"], customer.user_id)
+        self.assertEqual(data["first_name"], "Updated")
+        self.assertEqual(data["last_name"], "Customer")
+        self.assertEqual(data["address"], "456 Updated Street")
+
+        updated = Customer.find(customer.user_id)
+
+        self.assertEqual(updated.first_name, "Updated")
+        self.assertEqual(updated.last_name, "Customer")
+        self.assertEqual(updated.address, "456 Updated Street")
+
+    def test_update_customer_not_found(self):
+        """It should return 404 when updating a non-existent Customer"""
+
+        customer = CustomerFactory()
+
+        response = self.client.put(
+            f"{BASE_URL}/does-not-exist", json=customer.serialize()
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_customer_missing_field(self):
+        """It should not Update a Customer with missing required data"""
+
+        customer = CustomerFactory()
+        customer.create()
+
+        data = customer.serialize()
+        data.pop("first_name")
+
+        response = self.client.put(f"{BASE_URL}/{customer.user_id}", json=data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_customer_bad_content_type(self):
+        """It should not Update a Customer with bad content type"""
+
+        customer = CustomerFactory()
+        customer.create()
+
+        response = self.client.put(
+            f"{BASE_URL}/{customer.user_id}",
+            data="bad data",
+            content_type="text/plain",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_update_customer_user_id_from_url(self):
+        """It should ignore user_id in body and use URL user_id"""
+
+        customer = CustomerFactory()
+        customer.create()
+
+        data = customer.serialize()
+        data["user_id"] = "different-user-id"
+        data["first_name"] = "Changed"
+
+        response = self.client.put(f"{BASE_URL}/{customer.user_id}", json=data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        updated = Customer.find(customer.user_id)
+
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.first_name, "Changed")
+
+        self.assertIsNone(Customer.find("different-user-id"))
