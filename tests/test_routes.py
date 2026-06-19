@@ -215,3 +215,51 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated.first_name, "Changed")
 
         self.assertIsNone(Customer.find("different-user-id"))
+    #  D E L E T E   C U S T O M E R   T E S T S
+    ######################################################################
+
+    def test_delete_customer(self):
+        """It should Delete an existing Customer and return 204 No Content"""
+        # Arrange — create a customer so there is something to delete
+        customer = CustomerFactory()
+        customer.create()
+
+        # Act — send DELETE request
+        response = self.client.delete(f"{BASE_URL}/{customer.user_id}")
+
+        # Assert — 204 No Content, empty body
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+        # Confirm the customer is actually gone from the database
+        deleted = Customer.find(customer.user_id)
+        self.assertIsNone(deleted)
+
+    def test_delete_customer_not_found_is_idempotent(self):
+        """It should return 204 No Content even when the Customer does not exist (idempotent DELETE)"""
+        # Arrange — use an ID that was never persisted
+        nonexistent_id = "user-does-not-exist-99999"
+
+        # Act
+        response = self.client.delete(f"{BASE_URL}/{nonexistent_id}")
+
+        # Assert — idempotent: 204 regardless of prior state
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+    def test_delete_customer_twice_is_idempotent(self):
+        """It should return 204 on a second DELETE of the same Customer (idempotent)"""
+        # Arrange
+        customer = CustomerFactory()
+        customer.create()
+
+        # First delete
+        first_response = self.client.delete(f"{BASE_URL}/{customer.user_id}")
+        self.assertEqual(first_response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Second delete of same ID — should still be 204, not an error
+        second_response = self.client.delete(f"{BASE_URL}/{customer.user_id}")
+        self.assertEqual(second_response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Customer must still be gone
+        self.assertIsNone(Customer.find(customer.user_id))
