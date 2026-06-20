@@ -79,6 +79,7 @@ class TestYourResourceService(TestCase):
     ######################################################################
     #  C R E A T E   C U S T O M E R   T E S T S
     ######################################################################
+
     def test_create_customer(self):
         """It should Create a new Customer"""
         customer = CustomerFactory()
@@ -215,6 +216,8 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated.first_name, "Changed")
 
         self.assertIsNone(Customer.find("different-user-id"))
+
+    ######################################################################
     #  D E L E T E   C U S T O M E R   T E S T S
     ######################################################################
 
@@ -263,3 +266,39 @@ class TestYourResourceService(TestCase):
 
         # Customer must still be gone
         self.assertIsNone(Customer.find(customer.user_id))
+
+    ######################################################################
+    #  R E A D   C U S T O M E R   T E S T S
+    ######################################################################
+
+    def test_read_customer(self):
+        """It should Read an existing Customer"""
+        customer = CustomerFactory()
+        customer.create()
+
+        response = self.client.get(f"{BASE_URL}/{customer.user_id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertEqual(data["user_id"], customer.user_id)
+        self.assertEqual(data["first_name"], customer.first_name)
+        self.assertEqual(data["last_name"], customer.last_name)
+        self.assertEqual(data["address"], customer.address)
+
+    def test_read_customer_not_found(self):
+        """It should return 404 when reading a non-existing Customer"""
+        response = self.client.get(f"{BASE_URL}/does-not-exist")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_create_customer_no_content_type(self):
+        """It should return 415 when Content-Type is missing"""
+        customer = CustomerFactory()
+
+        response = self.client.post(
+            BASE_URL,
+            data=str(customer.serialize()),
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
