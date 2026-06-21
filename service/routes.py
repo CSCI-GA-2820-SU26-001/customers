@@ -125,6 +125,8 @@ def update_customer(user_id):
     app.logger.info("Customer with user_id %s updated.", user_id)
 
     return jsonify(customer.serialize()), status.HTTP_200_OK
+
+
 #  D E L E T E   C U S T O M E R
 ######################################################################
 @app.route("/customers/<string:user_id>", methods=["DELETE"])
@@ -148,3 +150,28 @@ def delete_customer(user_id):
         )
 
     return "", status.HTTP_204_NO_CONTENT
+
+
+######################################################################
+#  R E A D   C U S T O M E R
+######################################################################
+@app.route("/customers/<string:user_id>", methods=["GET"])
+def read_customer(user_id):
+    """
+    Read a Customer
+
+    This endpoint will return a Customer based on the user_id provided.
+    """
+    app.logger.info("Request to read customer with user_id: %s", user_id)
+
+    customer = Customer.find(user_id)
+
+    if not customer:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Customer with user_id '{user_id}' was not found.",
+        )
+
+    app.logger.info("Returning customer with user_id: %s", user_id)
+
+    return jsonify(customer.serialize()), status.HTTP_200_OK
