@@ -302,3 +302,43 @@ class TestYourResourceService(TestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    ######################################################################
+    #  L I S T   C U S T O M E R S   T E S T S
+    ######################################################################
+
+    def test_list_all_customers(self):
+        """It should List all Customers"""
+
+        # Arrange
+        customer1 = CustomerFactory()
+        customer1.create()
+
+        customer2 = CustomerFactory()
+        customer2.create()
+
+        # Act
+        response = self.client.get(BASE_URL)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+
+        self.assertEqual(len(data), 2)
+
+        # Verify returned content matches what we created
+        user_ids = [c["user_id"] for c in data]
+        self.assertIn(customer1.user_id, user_ids)
+        self.assertIn(customer2.user_id, user_ids)
+
+    def test_list_customers_empty(self):
+        """It should return empty list when no Customers exist"""
+
+        response = self.client.get(BASE_URL)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+
+        self.assertEqual(data, [])
