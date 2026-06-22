@@ -22,7 +22,9 @@ TestYourResourceModel API Service Test Suite
 import os
 import logging
 from unittest import TestCase
+from unittest.mock import patch
 from wsgi import app
+from service import create_app
 from service.common import status
 from service.models import db, Customer
 from .factories import CustomerFactory
@@ -342,3 +344,65 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
 
         self.assertEqual(data, [])
+
+    ######################################################################
+    #  U P D A T E   R O O T   U R L   T E S T S
+    ######################################################################
+
+    def test_index_contains_service_info(self):
+        """It should return service info in JSON format"""
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertIsNotNone(data)
+
+        self.assertIn("name", data)
+        self.assertIn("message", data)
+        self.assertIn("links", data)
+
+        self.assertEqual(data["name"], "Customers Service")
+
+        self.assertIn("customers", data["links"])
+        self.assertEqual(data["links"]["customers"], "/customers")
+
+    ######################################################################
+    #  E R R O R   H A N D L I N G   T E S T S
+    ######################################################################
+
+    def test_method_not_allowed(self):
+        """It should return 405 for unsupported methods"""
+
+        response = self.client.patch("/customers")
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_read_customer_internal_server_error(self):
+        """It should return 500 when an unexpected server error occurs"""
+
+        original_testing = app.config["TESTING"]
+        app.config["TESTING"] = False
+        try:
+            user_id = "test-user"
+            with patch(
+                "service.routes.Customer.find", side_effect=Exception("Database error")
+            ):
+                response = self.client.get(f"{BASE_URL}/{user_id}")
+                self.assertEqual(
+                    response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        finally:
+            app.config["TESTING"] = original_testing
+
+    def test_create_app_database_error(self):
+        """It should exit with code 4 when database creation fails"""
+
+        with patch(
+            "service.models.db.create_all", side_effect=Exception("DB init error")
+        ):
+            with patch("sys.exit") as mock_exit:
+                mock_exit.side_effect = SystemExit
+                with self.assertRaises(SystemExit):
+                    create_app()
