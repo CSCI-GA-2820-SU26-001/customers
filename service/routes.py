@@ -115,7 +115,7 @@ def update_customer(user_id):
 
     try:
         data = request.get_json()
-        data["user_id"] = user_id  # URL is source of truth
+        data["user_id"] = user_id
         customer.deserialize(data)
     except DataValidationError as error:
         abort(status.HTTP_400_BAD_REQUEST, str(error))
@@ -127,6 +127,7 @@ def update_customer(user_id):
     return jsonify(customer.serialize()), status.HTTP_200_OK
 
 
+######################################################################
 #  D E L E T E   C U S T O M E R
 ######################################################################
 @app.route("/customers/<string:user_id>", methods=["DELETE"])
@@ -175,3 +176,25 @@ def read_customer(user_id):
     app.logger.info("Returning customer with user_id: %s", user_id)
 
     return jsonify(customer.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+#  L I S T   C U S T O M E R S
+######################################################################
+@app.route("/customers", methods=["GET"])
+def list_customers():
+    """
+    List all Customers
+
+    This endpoint returns all Customers in the database.
+    An empty list is returned if no customers exist.
+    """
+    app.logger.info("Request to list all customers")
+
+    customers = Customer.all()
+
+    results = [customer.serialize() for customer in customers]
+
+    app.logger.info("Returning %d customers", len(results))
+
+    return jsonify(results), status.HTTP_200_OK
