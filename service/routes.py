@@ -33,10 +33,20 @@ from service.common import status  # HTTP Status Codes
 @app.route("/")
 def index():
     """Root URL response"""
-    return (
-        "Reminder: return some useful information in json format about the service here",
-        status.HTTP_200_OK,
-    )
+    app.logger.info("Request to root URL /")
+
+    response = {
+        "name": "Customers Service",
+        "message": "Welcome to the Customers service API",
+        "status": "running",
+        "links": {"customers": "/customers"},
+    }
+
+    return jsonify(response), status.HTTP_200_OK
+    # return (
+    #     "Reminder: return some useful information in json format about the service here",
+    #     status.HTTP_200_OK,
+    # )
 
 
 ######################################################################

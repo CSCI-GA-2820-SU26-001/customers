@@ -16,6 +16,7 @@
 """
 Module: error_handlers
 """
+
 from flask import jsonify
 from flask import current_app as app  # Import Flask application
 from service.models import DataValidationError
@@ -97,4 +98,19 @@ def internal_server_error(error):
             message=message,
         ),
         status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@app.errorhandler(status.HTTP_409_CONFLICT)
+def conflict(error):
+    """Handles duplicate resources with 409_CONFLICT"""
+    message = str(error)
+    app.logger.warning(message)
+    return (
+        jsonify(
+            status=status.HTTP_409_CONFLICT,
+            error="Conflict",
+            message=message,
+        ),
+        status.HTTP_409_CONFLICT,
     )
