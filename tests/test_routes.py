@@ -121,12 +121,18 @@ class TestYourResourceService(TestCase):
 
     def test_create_duplicate_customer(self):
         """It should not Create a Customer with duplicate user_id"""
+
         customer = CustomerFactory()
         customer.create()
 
         response = self.client.post(BASE_URL, json=customer.serialize())
 
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertTrue(response.is_json)
+
+        data = response.get_json()
+        self.assertEqual(data["status"], status.HTTP_409_CONFLICT)
+        self.assertEqual(data["error"], "Conflict")
 
     ######################################################################
     #  U P D A T E   C U S T O M E R   T E S T S
