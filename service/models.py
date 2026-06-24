@@ -109,9 +109,7 @@ class Customer(db.Model):
                 raise TypeError("address must be a non-empty string")
 
         except AttributeError as error:
-            raise DataValidationError(
-                "Invalid attribute: " + error.args[0]
-            ) from error
+            raise DataValidationError("Invalid attribute: " + error.args[0]) from error
         except KeyError as error:
             raise DataValidationError(
                 "Invalid Customer: missing " + error.args[0]
@@ -139,8 +137,3 @@ class Customer(db.Model):
         """Finds a Customer by user_id"""
         logger.info("Processing lookup for user_id %s ...", user_id)
         return cls.query.session.get(cls, user_id)
-
-
-# Temporary compatibility alias for the original template.
-# This prevents old template imports from breaking before route stories are done.
-YourResourceModel = Customer

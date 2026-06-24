@@ -18,7 +18,3 @@ class CustomerFactory(factory.Factory):
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
     address = factory.Faker("street_address")
-
-
-# Temporary compatibility alias for the original template.
-YourResourceModelFactory = CustomerFactory
