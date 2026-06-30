@@ -85,6 +85,7 @@ jobs:
 
       # ---------------------------------------------------------------
       # 5. Test — AC: "all unit tests pass"
+      #    --cov-report=xml produces coverage.xml for Codecov upload.
       #    --cov-fail-under=95 makes the step fail if coverage drops.
       #    RETRY_COUNT=1 mirrors the local `make test` export.
       # ---------------------------------------------------------------
@@ -93,3 +94,15 @@ jobs:
           RETRY_COUNT: "1"
         run: |
           pytest --pspec --cov=service --cov-report=xml --cov-fail-under=95 --disable-warnings
+
+      # ---------------------------------------------------------------
+      # 6. Upload coverage to Codecov — AC: "coverage report is uploaded"
+      #    Runs after tests so coverage.xml is guaranteed to exist.
+      #    CODECOV_TOKEN secret is set in the repository settings.
+      #    slug identifies the repo on Codecov.
+      # ---------------------------------------------------------------
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: CSCI-GA-2820-SU26-001/customers
