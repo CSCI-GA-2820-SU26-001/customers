@@ -1,0 +1,95 @@
+######################################################################
+# GitHub Actions CI Workflow
+# Runs on every pull request and every push to master.
+# Satisfies Issue #20: Setup Github Actions CI
+######################################################################
+
+name: CI
+
+"on":
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+
+    # ---------------------------------------------------------------
+    # PostgreSQL service container
+    # The test suite requires a real database — mirrors the local dev
+    # environment used by `make test`.
+    # ---------------------------------------------------------------
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URI: "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
+
+    steps:
+      # ---------------------------------------------------------------
+      # 1. Checkout the code
+      # ---------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # 2. Set up Python (must match Pipfile [requires] python_version)
+      # ---------------------------------------------------------------
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ---------------------------------------------------------------
+      # 3. Install pipenv then install all dev dependencies system-wide.
+      #    Mirrors `make install` (sudo pipenv install --system --dev).
+      # ---------------------------------------------------------------
+      - name: Install pipenv
+        run: pip install pipenv
+
+      - name: Install dependencies
+        run: pipenv install --dev --system
+
+      # ---------------------------------------------------------------
+      # 4. Lint — AC: "flake8 and pylint pass"
+      #    Note: the Makefile uses a leading `-` to swallow exit codes
+      #    locally (so developers see all warnings at once). In CI we
+      #    intentionally omit it so any error causes the check to fail.
+      # ---------------------------------------------------------------
+      - name: Lint with flake8 (syntax / undefined names)
+        run: |
+          flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Lint with flake8 (style / complexity)
+        run: |
+          flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Lint with pylint
+        run: |
+          pylint service tests --max-line-length=127
+
+      # ---------------------------------------------------------------
+      # 5. Test — AC: "all unit tests pass"
+      #    --cov-fail-under=95 makes the step fail if coverage drops.
+      #    RETRY_COUNT=1 mirrors the local `make test` export.
+      # ---------------------------------------------------------------
+      - name: Run unit tests with coverage
+        env:
+          RETRY_COUNT: "1"
+        run: |
+          pytest --pspec --cov=service --cov-report=xml --cov-fail-under=95 --disable-warnings
