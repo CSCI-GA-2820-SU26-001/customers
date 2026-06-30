@@ -87,6 +87,10 @@ class TestCustomerService(TestCase):
         customer = CustomerFactory()
         response = self.client.post(BASE_URL, json=customer.serialize())
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("Location", response.headers)
+        self.assertTrue(
+            response.headers["Location"].endswith(f"{BASE_URL}/{customer.user_id}")
+        )
         data = response.get_json()
         self.assertEqual(data["user_id"], customer.user_id)
         self.assertEqual(data["first_name"], customer.first_name)
