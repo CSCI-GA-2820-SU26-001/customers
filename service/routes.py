@@ -21,7 +21,7 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete YourResourceModel
 """
 
-from flask import jsonify, request, abort
+from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
 from service.models import Customer, DataValidationError
 from service.common import status  # HTTP Status Codes
@@ -100,7 +100,11 @@ def create_customer():
 
     app.logger.info("Customer with user_id %s created.", customer.user_id)
 
-    return jsonify(customer.serialize()), status.HTTP_201_CREATED
+    location_url = url_for("read_customer", user_id=customer.user_id)
+    response = jsonify(customer.serialize())
+    response.status_code = status.HTTP_201_CREATED
+    response.headers["Location"] = location_url
+    return response
 
 
 ######################################################################
