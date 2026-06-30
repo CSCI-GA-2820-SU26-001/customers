@@ -137,3 +137,39 @@ class Customer(db.Model):
         """Finds a Customer by user_id"""
         logger.info("Processing lookup for user_id %s ...", user_id)
         return cls.query.session.get(cls, user_id)
+
+    ##################################################
+    # QUERY METHODS
+    ##################################################
+
+    @classmethod
+    def find_by_first_name(cls, first_name):
+        """
+        Returns all Customers with the given first name
+        """
+        logger.info("Processing lookup for first_name %s ...", first_name)
+        return cls.query.filter(cls.first_name == first_name).all()
+
+    @classmethod
+    def find_by_last_name(cls, last_name):
+        """
+        Returns all Customers with the given last name
+        """
+        logger.info("Processing lookup for last_name %s ...", last_name)
+        return cls.query.filter(cls.last_name == last_name).all()
+
+    @classmethod
+    def find_by_name(cls, first_name, last_name):
+        """
+        Returns all Customers matching both first and last name
+        """
+        logger.info(
+            "Processing lookup for first_name=%s last_name=%s ...",
+            first_name,
+            last_name,
+        )
+
+        return cls.query.filter(
+            cls.first_name == first_name,
+            cls.last_name == last_name,
+        ).all()

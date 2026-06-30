@@ -19,7 +19,6 @@ from wsgi import app
 from service.models import Customer, DataValidationError, db
 from .factories import CustomerFactory
 
-
 DATABASE_URI = os.getenv(
     "DATABASE_URI",
     "postgresql+psycopg://postgres:postgres@localhost:5432/testdb",
@@ -286,3 +285,100 @@ class TestCustomerModel(TestCase):
         exception_mock.side_effect = Exception("database error")
 
         self.assertRaises(DataValidationError, customer.delete)
+
+    ##################################################
+    # QUERY METHODS TESTS
+    ##################################################
+
+    def test_find_by_first_name(self):
+        """It should find Customers by first name"""
+
+        customer1 = CustomerFactory(
+            first_name="John",
+            last_name="Smith",
+        )
+        customer2 = CustomerFactory(
+            first_name="John",
+            last_name="Brown",
+        )
+        customer3 = CustomerFactory(
+            first_name="Alice",
+            last_name="Smith",
+        )
+
+        customer1.create()
+        customer2.create()
+        customer3.create()
+
+        customers = Customer.find_by_first_name("John")
+
+        self.assertEqual(len(customers), 2)
+
+        for customer in customers:
+            self.assertEqual(customer.first_name, "John")
+
+    def test_find_by_last_name(self):
+        """It should find Customers by last name"""
+
+        customer1 = CustomerFactory(
+            first_name="John",
+            last_name="Smith",
+        )
+        customer2 = CustomerFactory(
+            first_name="Alice",
+            last_name="Smith",
+        )
+        customer3 = CustomerFactory(
+            first_name="Bob",
+            last_name="Brown",
+        )
+
+        customer1.create()
+        customer2.create()
+        customer3.create()
+
+        customers = Customer.find_by_last_name("Smith")
+
+        self.assertEqual(len(customers), 2)
+
+        for customer in customers:
+            self.assertEqual(customer.last_name, "Smith")
+
+    def test_find_by_name(self):
+        """It should find Customers by first and last name"""
+
+        customer1 = CustomerFactory(
+            first_name="John",
+            last_name="Smith",
+        )
+        customer2 = CustomerFactory(
+            first_name="John",
+            last_name="Brown",
+        )
+        customer3 = CustomerFactory(
+            first_name="Alice",
+            last_name="Smith",
+        )
+
+        customer1.create()
+        customer2.create()
+        customer3.create()
+
+        customers = Customer.find_by_name("John", "Smith")
+
+        self.assertEqual(len(customers), 1)
+        self.assertEqual(customers[0].first_name, "John")
+        self.assertEqual(customers[0].last_name, "Smith")
+
+    def test_find_by_name_no_matches(self):
+        """It should return an empty list when no Customers match"""
+
+        customer = CustomerFactory()
+        customer.create()
+
+        customers = Customer.find_by_name(
+            "DoesNotExist",
+            "Nobody",
+        )
+
+        self.assertEqual(customers, [])
