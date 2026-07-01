@@ -32,6 +32,7 @@ class Customer(db.Model):
     first_name = db.Column(db.String(63), nullable=False)
     last_name = db.Column(db.String(63), nullable=False)
     address = db.Column(db.String(256), nullable=False)
+    suspended = db.Column(db.Boolean(), nullable=False, default=False)
 
     def __repr__(self):
         return f"<Customer {self.user_id}: {self.first_name} {self.last_name}>"
@@ -78,7 +79,20 @@ class Customer(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "address": self.address,
+            "suspended": bool(self.suspended),
         }
+
+    @staticmethod
+    def _validate_non_empty_string(value, field_name):
+        """Validates that a field is a non-empty string"""
+        if not isinstance(value, str) or not value.strip():
+            raise TypeError(f"{field_name} must be a non-empty string")
+
+    @staticmethod
+    def _validate_boolean(value, field_name):
+        """Validates that a field is a boolean"""
+        if not isinstance(value, bool):
+            raise TypeError(f"{field_name} must be a boolean")
 
     def deserialize(self, data):
         """
@@ -96,17 +110,16 @@ class Customer(db.Model):
             self.last_name = data["last_name"]
             self.address = data["address"]
 
-            if not isinstance(self.user_id, str) or not self.user_id.strip():
-                raise TypeError("user_id must be a non-empty string")
+            self._validate_non_empty_string(self.user_id, "user_id")
+            self._validate_non_empty_string(self.first_name, "first_name")
+            self._validate_non_empty_string(self.last_name, "last_name")
+            self._validate_non_empty_string(self.address, "address")
 
-            if not isinstance(self.first_name, str) or not self.first_name.strip():
-                raise TypeError("first_name must be a non-empty string")
-
-            if not isinstance(self.last_name, str) or not self.last_name.strip():
-                raise TypeError("last_name must be a non-empty string")
-
-            if not isinstance(self.address, str) or not self.address.strip():
-                raise TypeError("address must be a non-empty string")
+            if "suspended" in data:
+                self._validate_boolean(data["suspended"], "suspended")
+                self.suspended = data["suspended"]
+            elif self.suspended is None:
+                self.suspended = False
 
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error

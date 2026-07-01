@@ -96,10 +96,31 @@ class TestCustomerService(TestCase):
         self.assertEqual(data["first_name"], customer.first_name)
         self.assertEqual(data["last_name"], customer.last_name)
         self.assertEqual(data["address"], customer.address)
+        self.assertIn("suspended", data)
+        self.assertEqual(data["suspended"], customer.suspended)
 
         new_customer = Customer.find(customer.user_id)
         self.assertIsNotNone(new_customer)
         self.assertEqual(new_customer.user_id, customer.user_id)
+        self.assertEqual(new_customer.suspended, customer.suspended)
+
+    def test_create_customer_without_suspended_defaults_false(self):
+        """It should default suspended to False when creating without suspended"""
+        customer = CustomerFactory()
+        data = customer.serialize()
+        data.pop("suspended")
+
+        response = self.client.post(BASE_URL, json=data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        result = response.get_json()
+        self.assertIn("suspended", result)
+        self.assertFalse(result["suspended"])
+
+        new_customer = Customer.find(customer.user_id)
+        self.assertIsNotNone(new_customer)
+        self.assertFalse(new_customer.suspended)
 
     def test_create_customer_missing_field(self):
         """It should not Create a Customer with missing required data"""
@@ -138,6 +159,16 @@ class TestCustomerService(TestCase):
         self.assertEqual(data["status"], status.HTTP_409_CONFLICT)
         self.assertEqual(data["error"], "Conflict")
 
+    def test_create_customer_with_bad_suspended_type(self):
+        """It should not Create a Customer with bad suspended type"""
+        customer = CustomerFactory()
+        data = customer.serialize()
+        data["suspended"] = "false"
+
+        response = self.client.post(BASE_URL, json=data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     ######################################################################
     #  U P D A T E   C U S T O M E R   T E S T S
     ######################################################################
@@ -163,12 +194,15 @@ class TestCustomerService(TestCase):
         self.assertEqual(data["first_name"], "Updated")
         self.assertEqual(data["last_name"], "Customer")
         self.assertEqual(data["address"], "456 Updated Street")
+        self.assertIn("suspended", data)
+        self.assertEqual(data["suspended"], customer.suspended)
 
         updated = Customer.find(customer.user_id)
 
         self.assertEqual(updated.first_name, "Updated")
         self.assertEqual(updated.last_name, "Customer")
         self.assertEqual(updated.address, "456 Updated Street")
+        self.assertEqual(updated.suspended, customer.suspended)
 
     def test_update_customer_not_found(self):
         """It should return 404 when updating a non-existent Customer"""
@@ -297,6 +331,8 @@ class TestCustomerService(TestCase):
         self.assertEqual(data["first_name"], customer.first_name)
         self.assertEqual(data["last_name"], customer.last_name)
         self.assertEqual(data["address"], customer.address)
+        self.assertIn("suspended", data)
+        self.assertEqual(data["suspended"], customer.suspended)
 
     def test_read_customer_not_found(self):
         """It should return 404 when reading a non-existing Customer"""
@@ -343,6 +379,8 @@ class TestCustomerService(TestCase):
         user_ids = [c["user_id"] for c in data]
         self.assertIn(customer1.user_id, user_ids)
         self.assertIn(customer2.user_id, user_ids)
+        for item in data:
+            self.assertIn("suspended", item)
 
     def test_list_customers_empty(self):
         """It should return empty list when no Customers exist"""

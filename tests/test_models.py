@@ -71,6 +71,7 @@ class TestCustomerModel(TestCase):
         self.assertEqual(found[0].first_name, customer.first_name)
         self.assertEqual(found[0].last_name, customer.last_name)
         self.assertEqual(found[0].address, customer.address)
+        self.assertEqual(found[0].suspended, customer.suspended)
 
     def test_find_a_customer(self):
         """It should find a Customer by user_id"""
@@ -134,6 +135,8 @@ class TestCustomerModel(TestCase):
         self.assertEqual(data["first_name"], customer.first_name)
         self.assertEqual(data["last_name"], customer.last_name)
         self.assertEqual(data["address"], customer.address)
+        self.assertIn("suspended", data)
+        self.assertEqual(data["suspended"], customer.suspended)
 
     def test_deserialize_a_customer(self):
         """It should deserialize a Customer"""
@@ -145,12 +148,33 @@ class TestCustomerModel(TestCase):
         }
 
         customer = Customer()
+        data["suspended"] = True
         customer.deserialize(data)
 
         self.assertEqual(customer.user_id, "user123")
         self.assertEqual(customer.first_name, "John")
         self.assertEqual(customer.last_name, "Doe")
         self.assertEqual(customer.address, "123 Main Street")
+        self.assertTrue(customer.suspended)
+
+    def test_deserialize_missing_suspended_defaults_false(self):
+        """It should default suspended to False when missing"""
+        data = CustomerFactory().serialize()
+        data.pop("suspended")
+
+        customer = Customer()
+        customer.deserialize(data)
+
+        self.assertFalse(customer.suspended)
+
+    def test_deserialize_bad_suspended_type(self):
+        """It should not deserialize a Customer with bad suspended type"""
+        data = CustomerFactory().serialize()
+        data["suspended"] = "false"
+
+        customer = Customer()
+
+        self.assertRaises(DataValidationError, customer.deserialize, data)
 
     def test_deserialize_missing_user_id(self):
         """It should not deserialize a Customer with missing user_id"""
@@ -255,7 +279,6 @@ class TestCustomerModel(TestCase):
         }
 
         customer = Customer()
-
         self.assertRaises(DataValidationError, customer.deserialize, data)
 
     @patch("service.models.db.session.commit")
