@@ -141,6 +141,27 @@ def update_customer(user_id):
     return jsonify(customer.serialize()), status.HTTP_200_OK
 
 
+@app.route("/customers/<string:user_id>/suspend", methods=["PUT"])
+def suspend_customer(user_id):
+    """Suspend a Customer account"""
+    app.logger.info("Request to suspend customer with user_id: %s", user_id)
+
+    customer = Customer.find(user_id)
+
+    if not customer:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Customer with user_id '{user_id}' was not found.",
+        )
+
+    customer.suspended = True
+    customer.update()
+
+    app.logger.info("Customer with user_id %s suspended.", customer.user_id)
+
+    return jsonify(customer.serialize()), status.HTTP_200_OK
+
+
 ######################################################################
 #  D E L E T E   C U S T O M E R
 ######################################################################
