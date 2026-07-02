@@ -264,6 +264,52 @@ class TestCustomerService(TestCase):
         self.assertIsNone(Customer.find("different-user-id"))
 
     ######################################################################
+    #  S U S P E N D   C U S T O M E R   T E S T S
+    ######################################################################
+
+    def test_suspend_customer(self):
+        """It should Suspend an existing Customer"""
+        customer = CustomerFactory()
+        customer.suspended = False
+        customer.create()
+
+        response = self.client.put(f"{BASE_URL}/{customer.user_id}/suspend")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertEqual(data["user_id"], customer.user_id)
+        self.assertTrue(data["suspended"])
+
+        updated = Customer.find(customer.user_id)
+        self.assertIsNotNone(updated)
+        self.assertTrue(updated.suspended)
+
+    def test_suspend_customer_not_found(self):
+        """It should return 404 when suspending a non-existing Customer"""
+        response = self.client.put(f"{BASE_URL}/does-not-exist/suspend")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(response.is_json)
+
+    def test_read_suspended_customer(self):
+        """It should Read a suspended Customer with suspended set to True"""
+        customer = CustomerFactory()
+        customer.suspended = False
+        customer.create()
+
+        suspend_response = self.client.put(f"{BASE_URL}/{customer.user_id}/suspend")
+        self.assertEqual(suspend_response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(f"{BASE_URL}/{customer.user_id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertEqual(data["user_id"], customer.user_id)
+        self.assertTrue(data["suspended"])
+
+    ######################################################################
     #  D E L E T E   C U S T O M E R   T E S T S
     ######################################################################
 
