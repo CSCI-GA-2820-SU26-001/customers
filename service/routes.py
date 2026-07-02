@@ -202,10 +202,34 @@ def list_customers():
 
     This endpoint returns all Customers in the database.
     An empty list is returned if no customers exist.
-    """
-    app.logger.info("Request to list all customers")
 
-    customers = Customer.all()
+    Optional query parameters:
+        first_name
+        last_name
+    """
+    app.logger.info("Request to list customers")
+
+    first_name = request.args.get("first_name")
+    last_name = request.args.get("last_name")
+
+    if first_name and last_name:
+        app.logger.info(
+            "Filtering customers by first_name=%s and last_name=%s",
+            first_name,
+            last_name,
+        )
+        customers = Customer.find_by_name(first_name, last_name)
+
+    elif first_name:
+        app.logger.info("Filtering customers by first_name=%s", first_name)
+        customers = Customer.find_by_first_name(first_name)
+
+    elif last_name:
+        app.logger.info("Filtering customers by last_name=%s", last_name)
+        customers = Customer.find_by_last_name(last_name)
+
+    else:
+        customers = Customer.all()
 
     results = [customer.serialize() for customer in customers]
 

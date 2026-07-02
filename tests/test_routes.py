@@ -394,6 +394,87 @@ class TestCustomerService(TestCase):
         self.assertEqual(data, [])
 
     ######################################################################
+    #  Q U E R Y   C U S T O M E R S   I N   L I S T   T E S T S
+    ######################################################################
+
+    def test_query_customers_by_first_name(self):
+        """It should filter Customers by first_name"""
+
+        CustomerFactory(first_name="John", last_name="Smith").create()
+        CustomerFactory(first_name="John", last_name="Brown").create()
+        CustomerFactory(first_name="Alice", last_name="Smith").create()
+
+        response = self.client.get(f"{BASE_URL}?first_name=John")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+
+        self.assertEqual(len(data), 2)
+
+        for customer in data:
+            self.assertEqual(customer["first_name"], "John")
+
+    def test_query_customers_by_last_name(self):
+        """It should filter Customers by last_name"""
+
+        CustomerFactory(first_name="John", last_name="Doe").create()
+        CustomerFactory(first_name="Alice", last_name="Doe").create()
+        CustomerFactory(first_name="Bob", last_name="Smith").create()
+
+        response = self.client.get(f"{BASE_URL}?last_name=Doe")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+
+        self.assertEqual(len(data), 2)
+
+        for customer in data:
+            self.assertEqual(customer["last_name"], "Doe")
+
+    def test_query_customers_by_first_and_last_name(self):
+        """It should filter Customers by first_name and last_name"""
+
+        CustomerFactory(first_name="John", last_name="Doe").create()
+        CustomerFactory(first_name="John", last_name="Smith").create()
+        CustomerFactory(first_name="Alice", last_name="Doe").create()
+
+        response = self.client.get(f"{BASE_URL}?first_name=John&last_name=Doe")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+
+        self.assertEqual(len(data), 1)
+
+        self.assertEqual(data[0]["first_name"], "John")
+        self.assertEqual(data[0]["last_name"], "Doe")
+
+    def test_query_customers_no_matches(self):
+        """It should return an empty list when no Customers match"""
+
+        customer = CustomerFactory(
+            first_name="John",
+            last_name="Doe",
+        )
+        customer.create()
+
+        test_cases = [
+            "?first_name=Nonexistent",
+            "?last_name=Nonexistent",
+            "?first_name=Nonexistent&last_name=Doe",
+            "?first_name=John&last_name=Nonexistent",
+            "?first_name=Nonexistent&last_name=Nobody",
+        ]
+
+        for query in test_cases:
+            response = self.client.get(f"{BASE_URL}{query}")
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.get_json(), [])
+
+    ######################################################################
     #  U P D A T E   R O O T   U R L   T E S T S
     ######################################################################
 
