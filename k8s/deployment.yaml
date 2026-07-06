@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customers
+  labels:
+    app: customers
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 10%
+  selector:
+    matchLabels:
+      app: customers
+  template:
+    metadata:
+      labels:
+        app: customers
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: customers
+        image: cluster-registry:5000/customers:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+          - name: RETRY_COUNT
+            value: "10"
+          - name: DATABASE_URI
+            valueFrom:
+              secretKeyRef:
+                name: postgres-creds
+                key: database_uri
+        readinessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          httpGet:
+            path: /health
+            port: 8080
+        livenessProbe:  
+          initialDelaySeconds: 30  
+          periodSeconds: 60  
+          httpGet:
+            path: /health
+            port: 8080
+        resources:
+          limits:
+            cpu: "0.50"
+            memory: "128Mi"
+          requests:
+            cpu: "0.25"
+            memory: "64Mi"

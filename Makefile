@@ -94,7 +94,11 @@ build:	## Build the project container image for local platform
 .PHONY: push
 push:	## Push the image to the container registry
 	$(info Pushing $(IMAGE)...)
-	docker push $(IMAGE)
+	docker tag $(IMAGE) localhost:5000/$(IMAGE_NAME):$(IMAGE_TAG)
+	docker push localhost:5000/$(IMAGE_NAME):$(IMAGE_TAG)
+# 	docker push $(IMAGE)
+# 	NOTE: cluster-registry is ONLY resolvable inside K3D cluster
+# 	Host machine must use localhost:5000 for docker push
 
 .PHONY: buildx
 buildx:	## Build multi-platform image with buildx
