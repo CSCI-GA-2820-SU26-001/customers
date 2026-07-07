@@ -71,7 +71,12 @@ import: ## Import the image into the local K3D cluster
 .PHONY: deploy
 deploy: ## Deploy the service on local Kubernetes
 	$(info Deploying service locally...)
-	kubectl apply -R -f k8s/
+	kubectl apply -f k8s/postgres/
+	kubectl rollout status statefulset/postgres --timeout=120s
+	kubectl apply -f k8s/service.yaml
+	kubectl apply -f k8s/deployment.yaml
+	kubectl apply -f k8s/ingress.yaml
+	kubectl rollout status deployment/customers --timeout=180s
 
 ############################################################
 # COMMANDS FOR BUILDING THE IMAGE
