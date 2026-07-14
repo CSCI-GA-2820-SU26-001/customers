@@ -15,7 +15,12 @@
 ######################################################################
 
 """
-Customer API Service Test Suite
+TestCustomer API Service Test Suite
+
+BASE_URL points at /api/customers because the CRUD + List routes now
+live behind Flask-RESTX under the /api prefix (see issue #52). The
+bare / root route is untouched on purpose — it stays reserved for the
+future admin UI shell.
 """
 
 # pylint: disable=duplicate-code
@@ -29,7 +34,7 @@ from service.common import status
 from service.models import db, Customer
 from .factories import CustomerFactory
 
-BASE_URL = "/customers"
+BASE_URL = "/api/customers"
 
 
 DATABASE_URI = os.getenv(
@@ -557,7 +562,7 @@ class TestCustomerService(TestCase):
     def test_method_not_allowed(self):
         """It should return 405 for unsupported methods"""
 
-        response = self.client.patch("/customers")
+        response = self.client.patch(BASE_URL)
 
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 

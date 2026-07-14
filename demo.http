@@ -1,0 +1,77 @@
+### 1. Clean up demo user before starting
+DELETE http://localhost:8080/customers/demo-user
+
+
+### 2. Root endpoint
+GET http://localhost:8080/
+
+
+### 3. Create customer
+POST http://localhost:8080/customers
+Content-Type: application/json
+
+{
+  "user_id": "demo-user",
+  "first_name": "Zihao",
+  "last_name": "Zhang",
+  "address": "Jersey City, NJ"
+}
+
+
+### 4. Read customer
+GET http://localhost:8080/customers/demo-user
+
+
+### 5. List all customers
+GET http://localhost:8080/customers
+
+
+### 6. Update customer
+PUT http://localhost:8080/customers/demo-user
+Content-Type: application/json
+
+{
+  "first_name": "Updated",
+  "last_name": "Zhang",
+  "address": "New York, NY"
+}
+
+
+### 7. Read customer again after update
+GET http://localhost:8080/customers/demo-user
+
+
+### 8. Delete customer
+DELETE http://localhost:8080/customers/demo-user
+
+
+### 9. Read customer after delete
+GET http://localhost:8080/customers/demo-user
+
+
+### 10. Create duplicate customer sad path
+POST http://localhost:8080/customers
+Content-Type: application/json
+
+{
+  "user_id": "duplicate-user",
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "address": "123 Main Street"
+}
+
+
+### 11. Create duplicate customer again, should return 409
+POST http://localhost:8080/customers
+Content-Type: application/json
+
+{
+  "user_id": "duplicate-user",
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "address": "123 Main Street"
+}
+
+
+### 12. Clean up duplicate user
+DELETE http://localhost:8080/customers/duplicate-user
