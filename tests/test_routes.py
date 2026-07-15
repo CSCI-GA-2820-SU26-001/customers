@@ -31,7 +31,7 @@ from unittest.mock import patch
 from wsgi import app
 from service import create_app
 from service.common import status
-from service.models import db, Customer
+from service.models import db, Customer, DataValidationError
 from .factories import CustomerFactory
 
 BASE_URL = "/api/customers"
@@ -171,6 +171,23 @@ class TestCustomerService(TestCase):
         data = response.get_json()
         self.assertEqual(data["status"], status.HTTP_409_CONFLICT)
         self.assertEqual(data["error"], "Conflict")
+
+    def test_create_customer_database_error_returns_400_not_500(self):
+        """It should return 400 (not 500) when Customer.create() fails at the DB layer"""
+        customer = CustomerFactory()
+
+        with patch(
+            "service.routes.Customer.create",
+            side_effect=DataValidationError("simulated database error"),
+        ):
+            response = self.client.post(BASE_URL, json=customer.serialize())
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(response.is_json)
+
+        data = response.get_json()
+        self.assertEqual(data["status"], status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(data["error"], "Bad Request")
 
     def test_create_customer_with_bad_suspended_type(self):
         """It should not Create a Customer with bad suspended type"""
