@@ -35,7 +35,6 @@ from service.models import db, Customer, DataValidationError
 from .factories import CustomerFactory
 
 BASE_URL = "/api/customers"
-LEGACY_BASE_URL = "/customers"
 
 
 DATABASE_URI = os.getenv(
@@ -303,7 +302,7 @@ class TestCustomerService(TestCase):
         customer.suspended = False
         customer.create()
 
-        response = self.client.put(f"{LEGACY_BASE_URL}/{customer.user_id}/suspend")
+        response = self.client.put(f"{BASE_URL}/{customer.user_id}/suspend")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -317,7 +316,7 @@ class TestCustomerService(TestCase):
 
     def test_suspend_customer_not_found(self):
         """It should return 404 when suspending a non-existing Customer"""
-        response = self.client.put(f"{LEGACY_BASE_URL}/does-not-exist/suspend")
+        response = self.client.put(f"{BASE_URL}/does-not-exist/suspend")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(response.is_json)
@@ -328,9 +327,7 @@ class TestCustomerService(TestCase):
         customer.suspended = False
         customer.create()
 
-        suspend_response = self.client.put(
-            f"{LEGACY_BASE_URL}/{customer.user_id}/suspend"
-        )
+        suspend_response = self.client.put(f"{BASE_URL}/{customer.user_id}/suspend")
         self.assertEqual(suspend_response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(f"{BASE_URL}/{customer.user_id}")
@@ -440,7 +437,7 @@ class TestCustomerService(TestCase):
         CustomerFactory(first_name="John", last_name="Brown").create()
         CustomerFactory(first_name="Alice", last_name="Smith").create()
 
-        response = self.client.get(f"{LEGACY_BASE_URL}?first_name=John")
+        response = self.client.get(f"{BASE_URL}?first_name=John")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -458,7 +455,7 @@ class TestCustomerService(TestCase):
         CustomerFactory(first_name="Alice", last_name="Doe").create()
         CustomerFactory(first_name="Bob", last_name="Smith").create()
 
-        response = self.client.get(f"{LEGACY_BASE_URL}?last_name=Doe")
+        response = self.client.get(f"{BASE_URL}?last_name=Doe")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -476,7 +473,7 @@ class TestCustomerService(TestCase):
         CustomerFactory(first_name="John", last_name="Smith").create()
         CustomerFactory(first_name="Alice", last_name="Doe").create()
 
-        response = self.client.get(f"{LEGACY_BASE_URL}?first_name=John&last_name=Doe")
+        response = self.client.get(f"{BASE_URL}?first_name=John&last_name=Doe")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -505,7 +502,7 @@ class TestCustomerService(TestCase):
         ]
 
         for query in test_cases:
-            response = self.client.get(f"{LEGACY_BASE_URL}{query}")
+            response = self.client.get(f"{BASE_URL}{query}")
 
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.get_json(), [])
