@@ -23,7 +23,7 @@ and Delete YourResourceModel
 
 from flask import jsonify, request, abort
 from flask import current_app as app  # Import Flask application
-from flask_restx import Api, Resource, Namespace
+from flask_restx import Api, Resource, Namespace, reqparse
 from werkzeug.exceptions import (
     BadRequest,
     NotFound,
@@ -108,6 +108,30 @@ def check_content_type(content_type):
 
 
 ######################################################################
+#  Q U E R Y   S T R I N G   A R G U M E N T S
+######################################################################
+# reqparse gives Flask-RESTX / Swagger visibility into what GET
+# /api/customers accepts as filters — it shows up in /apidocs the same
+# way a body model would for POST/PUT, and validates types (a
+# non-string first_name/last_name becomes a clean 400 automatically).
+customer_args = reqparse.RequestParser()
+customer_args.add_argument(
+    "first_name",
+    type=str,
+    location="args",
+    required=False,
+    help="Filter customers by first name",
+)
+customer_args.add_argument(
+    "last_name",
+    type=str,
+    location="args",
+    required=False,
+    help="Filter customers by last name",
+)
+
+
+######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
@@ -128,16 +152,36 @@ class CustomerCollection(Resource):
     # ------------------------------------------------------------------
     # LIST ALL CUSTOMERS
     # ------------------------------------------------------------------
+    @ns.expect(customer_args, validate=True)
     def get(self):
         """
         List all Customers
 
-        This endpoint returns all Customers in the database.
-        An empty list is returned if no customers exist.
+        This endpoint returns all Customers in the database. Supports
+        optional first_name / last_name query-string filtering — an
+        empty list is returned if no customers exist or none match.
         """
-        app.logger.info("Request to list all customers")
+        app.logger.info("Request to list customers")
 
-        customers = Customer.all()
+        args = customer_args.parse_args()
+        first_name = args.get("first_name")
+        last_name = args.get("last_name")
+
+        if first_name and last_name:
+            app.logger.info(
+                "Filtering customers by first_name=%s and last_name=%s",
+                first_name,
+                last_name,
+            )
+            customers = Customer.find_by_name(first_name, last_name)
+        elif first_name:
+            app.logger.info("Filtering customers by first_name=%s", first_name)
+            customers = Customer.find_by_first_name(first_name)
+        elif last_name:
+            app.logger.info("Filtering customers by last_name=%s", last_name)
+            customers = Customer.find_by_last_name(last_name)
+        else:
+            customers = Customer.all()
 
         results = [customer.serialize() for customer in customers]
 
@@ -270,81 +314,35 @@ class CustomerResource(Resource):
 
 
 ######################################################################
-#  Q U E R Y   +   S U S P E N D   (not yet migrated — see issue #53)
+#  PATH: /api/customers/<user_id>/suspend
 ######################################################################
-# Per issue #52's assumptions, Query and Suspend stay on their
-# pre-migration, plain-Flask routes and outside the /api prefix until
-# the follow-up "Migrate Query and Suspend Action routes to
-# Flask-RESTX" story. Keeping them here (rather than deleting them)
-# means #52 stays scoped to CRUD + List while #52's own acceptance
-# criteria ("each behaves identically to the pre-migration routes")
-# still holds for the parts of the surface this story didn't touch.
-@app.route("/customers", methods=["GET"])
-def query_customers():
+@ns.route("/<string:user_id>/suspend")
+@ns.param("user_id", "The Customer identifier")
+class CustomerSuspendResource(Resource):
     """
-    Query Customers by first_name and/or last_name
+    CustomerSuspendResource
 
-    NOTE: this is the pre-migration List/Query endpoint. The migrated
-    List endpoint (GET /api/customers, above) does not filter — that
-    capability lives here until #53 moves it under /api.
+    PUT /api/customers/{user_id}/suspend - Suspend a Customer account
     """
-    app.logger.info("Request to list customers")
 
-    first_name = request.args.get("first_name")
-    last_name = request.args.get("last_name")
+    def put(self, user_id):
+        """Suspend a Customer account"""
+        app.logger.info("Request to suspend customer with user_id: %s", user_id)
 
-    if first_name and last_name:
-        app.logger.info(
-            "Filtering customers by first_name=%s and last_name=%s",
-            first_name,
-            last_name,
-        )
-        customers = Customer.find_by_name(first_name, last_name)
-    elif first_name:
-        app.logger.info("Filtering customers by first_name=%s", first_name)
-        customers = Customer.find_by_first_name(first_name)
-    elif last_name:
-        app.logger.info("Filtering customers by last_name=%s", last_name)
-        customers = Customer.find_by_last_name(last_name)
-    else:
-        customers = Customer.all()
+        customer = Customer.find(user_id)
 
-    results = [customer.serialize() for customer in customers]
+        if not customer:
+            abort(
+                status.HTTP_404_NOT_FOUND,
+                f"Customer with user_id '{user_id}' was not found.",
+            )
 
-    app.logger.info("Returning %d customers", len(results))
+        customer.suspended = True
+        customer.update()
 
-    return jsonify(results), status.HTTP_200_OK
+        app.logger.info("Customer with user_id %s suspended.", customer.user_id)
 
-
-@app.route("/customers/<string:user_id>/suspend", methods=["PUT"])
-def suspend_customer(user_id):
-    """Suspend a Customer account"""
-    app.logger.info("Request to suspend customer with user_id: %s", user_id)
-
-    customer = Customer.find(user_id)
-
-    if not customer:
-        # flask.abort() here wouldn't get JSON-formatted by our
-        # @api.errorhandler(NotFound) handlers below — those only fire
-        # for requests Flask-RESTX owns (paths under /api), and this
-        # route is deliberately outside /api. Build the JSON body
-        # directly instead of relying on error-handler wiring meant
-        # for a different URL prefix.
-        message = f"Customer with user_id '{user_id}' was not found."
-        app.logger.warning(message)
-        return (
-            jsonify(
-                status=status.HTTP_404_NOT_FOUND, error="Not Found", message=message
-            ),
-            status.HTTP_404_NOT_FOUND,
-        )
-
-    customer.suspended = True
-    customer.update()
-
-    app.logger.info("Customer with user_id %s suspended.", customer.user_id)
-
-    return jsonify(customer.serialize()), status.HTTP_200_OK
+        return customer.serialize(), status.HTTP_200_OK
 
 
 ######################################################################
