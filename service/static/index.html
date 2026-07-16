@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customer Administration</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="static/css/cerulean_bootstrap.min.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="page-header">
+        <h1>Customer Administration</h1>
+    </div>
+
+    <!-- Flash Message -->
+    <div class="table-responsive">
+        <table class="table">
+            <tr>
+                <td>Status:</td>
+                <td>
+                    <span id="flash_message"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- FORM -->
+
+    <div class="col-md-12" id="form_data">
+
+        <h3>Customer Information</h3>
+
+        <div class="well">
+
+            <!-- USER ID -->
+
+            <div class="form-horizontal">
+
+                <div class="form-group">
+
+                    <label
+                        class="control-label col-sm-2"
+                        for="customer_user_id">
+
+                        User ID:
+
+                    </label>
+
+                    <div class="col-sm-6">
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="customer_user_id"
+                            placeholder="Enter User ID">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- FIRST NAME -->
+
+            <div class="form-horizontal">
+
+                <div class="form-group">
+
+                    <label
+                        class="control-label col-sm-2"
+                        for="customer_first_name">
+
+                        First Name:
+
+                    </label>
+
+                    <div class="col-sm-10">
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="customer_first_name"
+                            placeholder="Enter First Name">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- LAST NAME -->
+
+            <div class="form-horizontal">
+
+                <div class="form-group">
+
+                    <label
+                        class="control-label col-sm-2"
+                        for="customer_last_name">
+
+                        Last Name:
+
+                    </label>
+
+                    <div class="col-sm-10">
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="customer_last_name"
+                            placeholder="Enter Last Name">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ADDRESS -->
+
+            <div class="form-horizontal">
+
+                <div class="form-group">
+
+                    <label
+                        class="control-label col-sm-2"
+                        for="customer_address">
+
+                        Address:
+
+                    </label>
+
+                    <div class="col-sm-10">
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="customer_address"
+                            placeholder="Enter Address">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- BUTTONS -->
+
+            <div class="form-group">
+
+                <div class="col-sm-offset-2 col-sm-10">
+
+                    <button
+                        class="btn btn-primary"
+                        id="list-btn">
+
+                        List
+
+                    </button>
+
+                    <button
+                        class="btn btn-success"
+                        id="create-btn">
+
+                        Create
+
+                    </button>
+
+                    <button
+                        class="btn btn-info"
+                        id="retrieve-btn">
+
+                        Retrieve
+
+                    </button>
+
+                    <button
+                        class="btn btn-warning"
+                        id="update-btn">
+
+                        Update
+
+                    </button>
+
+                    <button
+                        class="btn btn-danger"
+                        id="delete-btn">
+
+                        Delete
+
+                    </button>
+
+                    <button
+                        class="btn btn-primary"
+                        id="query-btn">
+
+                        Query
+
+                    </button>
+
+                    <button
+                        class="btn btn-default"
+                        id="suspend-btn">
+
+                        Suspend
+
+                    </button>
+
+                    <button
+                        class="btn btn-default"
+                        id="clear-btn">
+
+                        Clear
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- SEARCH RESULTS -->
+
+    <div
+        class="table-responsive col-md-12"
+        id="search_results">
+
+        <table class="table table-striped">
+
+            <thead>
+
+                <tr>
+
+                    <th>User ID</th>
+
+                    <th>First Name</th>
+
+                    <th>Last Name</th>
+
+                    <th>Address</th>
+
+                </tr>
+
+            </thead>
+
+        </table>
+
+    </div>
+
+    <footer>
+
+        <br><br>
+
+        <p>&copy; NYU DevOps</p>
+
+    </footer>
+
+</div>
+
+<script src="static/js/jquery-3.6.0.min.js"></script>
+
+<script src="static/js/bootstrap.min.js"></script>
+
+<script src="static/js/rest_api.js"></script>
+
+</body>
+
+</html>
