@@ -23,7 +23,7 @@ and Delete YourResourceModel
 
 from flask import jsonify, request, abort
 from flask import current_app as app  # Import Flask application
-from flask_restx import Api, Resource, Namespace, reqparse
+from flask_restx import Api, Resource, Namespace, reqparse, fields
 from werkzeug.exceptions import (
     BadRequest,
     NotFound,
@@ -83,6 +83,118 @@ api = Api(
 # pylint: disable=invalid-name
 ns = Namespace("customers", description="Customer operations")
 api.add_namespace(ns, path="/customers")
+
+######################################################################
+#  S W A G G E R   D A T A   M O D E L S
+######################################################################
+customer_model = ns.model(
+    "Customer",
+    {
+        "user_id": fields.String(
+            required=True,
+            description="The unique user ID of the customer",
+            example="jdoe123",
+        ),
+        "first_name": fields.String(
+            required=True,
+            description="The customer's first name",
+            example="John",
+        ),
+        "last_name": fields.String(
+            required=True,
+            description="The customer's last name",
+            example="Doe",
+        ),
+        "address": fields.String(
+            required=True,
+            description="The customer's address",
+            example="123 Main Street",
+        ),
+        "suspended": fields.Boolean(
+            required=False,
+            description="Whether the customer account is suspended",
+            example=False,
+        ),
+    },
+)
+
+customer_create_model = ns.model(
+    "CustomerCreate",
+    {
+        "user_id": fields.String(
+            required=True,
+            description="The unique user ID of the customer",
+            example="jdoe123",
+        ),
+        "first_name": fields.String(
+            required=True,
+            description="The customer's first name",
+            example="John",
+        ),
+        "last_name": fields.String(
+            required=True,
+            description="The customer's last name",
+            example="Doe",
+        ),
+        "address": fields.String(
+            required=True,
+            description="The customer's address",
+            example="123 Main Street",
+        ),
+        "suspended": fields.Boolean(
+            required=False,
+            description="Whether the customer account is suspended",
+            example=False,
+        ),
+    },
+)
+
+customer_update_model = ns.model(
+    "CustomerUpdate",
+    {
+        "first_name": fields.String(
+            required=True,
+            description="The customer's first name",
+            example="John",
+        ),
+        "last_name": fields.String(
+            required=True,
+            description="The customer's last name",
+            example="Doe",
+        ),
+        "address": fields.String(
+            required=True,
+            description="The customer's address",
+            example="123 Main Street",
+        ),
+        "suspended": fields.Boolean(
+            required=False,
+            description="Whether the customer account is suspended",
+            example=False,
+        ),
+    },
+)
+
+error_model = ns.model(
+    "Error",
+    {
+        "status": fields.Integer(
+            required=True,
+            description="HTTP status code",
+            example=400,
+        ),
+        "error": fields.String(
+            required=True,
+            description="HTTP error name",
+            example="Bad Request",
+        ),
+        "message": fields.String(
+            required=True,
+            description="Error details",
+            example="Invalid customer data",
+        ),
+    },
+)
 
 
 ######################################################################
@@ -152,7 +264,13 @@ class CustomerCollection(Resource):
     # ------------------------------------------------------------------
     # LIST ALL CUSTOMERS
     # ------------------------------------------------------------------
+    @ns.doc("list_customers")
     @ns.expect(customer_args, validate=True)
+    @ns.marshal_list_with(
+        customer_model,
+        code=status.HTTP_200_OK,
+        description="Success",
+    )
     def get(self):
         """
         List all Customers
@@ -192,6 +310,20 @@ class CustomerCollection(Resource):
     # ------------------------------------------------------------------
     # CREATE A NEW CUSTOMER
     # ------------------------------------------------------------------
+    @ns.doc("create_customer")
+    @ns.expect(customer_create_model, validate=False)
+    @ns.response(status.HTTP_400_BAD_REQUEST, "Bad Request", error_model)
+    @ns.response(status.HTTP_409_CONFLICT, "Conflict", error_model)
+    @ns.response(
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        "Unsupported Media Type",
+        error_model,
+    )
+    @ns.marshal_with(
+        customer_model,
+        code=status.HTTP_201_CREATED,
+        description="Customer created",
+    )
     def post(self):
         """Create a Customer"""
         app.logger.info("Request to create a customer")
@@ -238,6 +370,13 @@ class CustomerResource(Resource):
     # ------------------------------------------------------------------
     # READ A CUSTOMER
     # ------------------------------------------------------------------
+    @ns.doc("get_customer")
+    @ns.response(status.HTTP_404_NOT_FOUND, "Customer not found", error_model)
+    @ns.marshal_with(
+        customer_model,
+        code=status.HTTP_200_OK,
+        description="Success",
+    )
     def get(self, user_id):
         """
         Read a Customer
@@ -261,6 +400,20 @@ class CustomerResource(Resource):
     # ------------------------------------------------------------------
     # UPDATE AN EXISTING CUSTOMER
     # ------------------------------------------------------------------
+    @ns.doc("update_customer")
+    @ns.expect(customer_update_model, validate=False)
+    @ns.response(status.HTTP_400_BAD_REQUEST, "Bad Request", error_model)
+    @ns.response(status.HTTP_404_NOT_FOUND, "Customer not found", error_model)
+    @ns.response(
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        "Unsupported Media Type",
+        error_model,
+    )
+    @ns.marshal_with(
+        customer_model,
+        code=status.HTTP_200_OK,
+        description="Customer updated",
+    )
     def put(self, user_id):
         """Update an existing Customer"""
         app.logger.info("Request to update customer with user_id: %s", user_id)
@@ -291,6 +444,8 @@ class CustomerResource(Resource):
     # ------------------------------------------------------------------
     # DELETE A CUSTOMER
     # ------------------------------------------------------------------
+    @ns.doc("delete_customer")
+    @ns.response(status.HTTP_204_NO_CONTENT, "Customer deleted")
     def delete(self, user_id):
         """
         Delete a Customer
@@ -325,6 +480,13 @@ class CustomerSuspendResource(Resource):
     PUT /api/customers/{user_id}/suspend - Suspend a Customer account
     """
 
+    @ns.doc("suspend_customer")
+    @ns.response(status.HTTP_404_NOT_FOUND, "Customer not found", error_model)
+    @ns.marshal_with(
+        customer_model,
+        code=status.HTTP_200_OK,
+        description="Customer suspended",
+    )
     def put(self, user_id):
         """Suspend a Customer account"""
         app.logger.info("Request to suspend customer with user_id: %s", user_id)

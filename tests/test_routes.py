@@ -90,6 +90,34 @@ class TestCustomerService(TestCase):
         data = resp.get_json()
         self.assertEqual(data["status"], "OK")
 
+    def test_swagger_docs(self):
+        """It should return Swagger API documentation page"""
+        response = self.client.get("/apidocs")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_swagger_json(self):
+        """It should return Swagger JSON documentation"""
+        response = self.client.get("/api/swagger.json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertIn("paths", data)
+        self.assertIn("/customers", data["paths"])
+        self.assertIn("/customers/{user_id}", data["paths"])
+        self.assertIn("/customers/{user_id}/suspend", data["paths"])
+
+        customer_paths = data["paths"]["/customers"]
+        self.assertIn("get", customer_paths)
+        self.assertIn("post", customer_paths)
+
+        customer_resource_paths = data["paths"]["/customers/{user_id}"]
+        self.assertIn("get", customer_resource_paths)
+        self.assertIn("put", customer_resource_paths)
+        self.assertIn("delete", customer_resource_paths)
+
+        suspend_paths = data["paths"]["/customers/{user_id}/suspend"]
+        self.assertIn("put", suspend_paths)
+
     ######################################################################
     #  C R E A T E   C U S T O M E R   T E S T S
     ######################################################################
