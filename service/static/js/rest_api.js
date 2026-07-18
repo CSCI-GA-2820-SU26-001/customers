@@ -102,8 +102,71 @@ $(function () {
     // Placeholders for future stories
     // ****************************************
 
+        // ****************************************
+    // Create a Customer
+    // ****************************************
+
     $("#create-btn").click(function () {
-        flash_message("Create not implemented yet.");
+
+        $("#flash_message").empty();
+
+        let customer = {
+            "user_id": $("#customer_user_id").val(),
+            "first_name": $("#customer_first_name").val(),
+            "last_name": $("#customer_last_name").val(),
+            "address": $("#customer_address").val()
+        };
+
+        let ajax = $.ajax({
+            type: "POST",
+            url: "/api/customers",
+            contentType: "application/json",
+            data: JSON.stringify(customer)
+        });
+
+        ajax.done(function (res) {
+
+            $("#search_results").empty();
+
+            let table = '<table class="table table-striped">';
+            table += '<thead>';
+            table += '<tr>';
+            table += '<th>User ID</th>';
+            table += '<th>First Name</th>';
+            table += '<th>Last Name</th>';
+            table += '<th>Address</th>';
+            table += '</tr>';
+            table += '</thead><tbody>';
+
+            table += `
+                <tr>
+                    <td>${res.user_id}</td>
+                    <td>${res.first_name}</td>
+                    <td>${res.last_name}</td>
+                    <td>${res.address}</td>
+                </tr>
+            `;
+
+            table += "</tbody></table>";
+
+            $("#search_results").append(table);
+
+            update_form_data(res);
+            flash_message("Success");
+        });
+
+        ajax.fail(function (res) {
+
+            if (res.responseJSON && res.responseJSON.message) {
+                flash_message(res.responseJSON.message);
+            } else if (res.responseJSON && res.responseJSON.error) {
+                flash_message(res.responseJSON.error);
+            } else {
+                flash_message("Unable to create customer.");
+            }
+
+        });
+
     });
 
     $("#retrieve-btn").click(function () {
