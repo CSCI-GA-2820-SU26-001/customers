@@ -576,23 +576,22 @@ class TestCustomerService(TestCase):
     ######################################################################
 
     def test_index_contains_service_info(self):
-        """It should return service info in JSON format"""
+        """It should return the Customer Administration web page"""
 
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.content_type, "text/html; charset=utf-8")
 
-        data = response.get_json()
-        self.assertIsNotNone(data)
+        html = response.get_data(as_text=True)
 
-        self.assertIn("name", data)
-        self.assertIn("message", data)
-        self.assertIn("links", data)
-
-        self.assertEqual(data["name"], "Customers Service")
-
-        self.assertIn("customers", data["links"])
-        self.assertEqual(data["links"]["customers"], "/customers")
+        self.assertIn("Customer Administration", html)
+        self.assertIn('id="customer_user_id"', html)
+        self.assertIn('id="customer_first_name"', html)
+        self.assertIn('id="customer_last_name"', html)
+        self.assertIn('id="customer_address"', html)
+        self.assertIn('id="list-btn"', html)
+        self.assertIn('id="search_results"', html)
 
     ######################################################################
     #  E R R O R   H A N D L I N G   T E S T S

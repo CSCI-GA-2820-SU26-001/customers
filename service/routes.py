@@ -21,7 +21,7 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete YourResourceModel
 """
 
-from flask import jsonify, request, abort
+from flask import jsonify, request, abort, send_from_directory
 from flask import current_app as app  # Import Flask application
 from flask_restx import Api, Resource, Namespace, reqparse, fields
 from werkzeug.exceptions import (
@@ -40,17 +40,19 @@ from service.common import status  # HTTP Status Codes
 ######################################################################
 @app.route("/")
 def index():
-    """Root URL response"""
-    app.logger.info("Request to root URL /")
+    """Serve the Customer Administration UI"""
+    return send_from_directory("static", "index.html")
+    # """Root URL response"""
+    # app.logger.info("Request to root URL /")
 
-    response = {
-        "name": "Customers Service",
-        "message": "Welcome to the Customers service API",
-        "status": "running",
-        "links": {"customers": "/customers"},
-    }
+    # response = {
+    #     "name": "Customers Service",
+    #     "message": "Welcome to the Customers service API",
+    #     "status": "running",
+    #     "links": {"customers": "/customers"},
+    # }
 
-    return jsonify(response), status.HTTP_200_OK
+    # return jsonify(response), status.HTTP_200_OK
     # return (
     #     "Reminder: return some useful information in json format about the service here",
     #     status.HTTP_200_OK,
