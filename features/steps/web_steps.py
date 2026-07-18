@@ -26,6 +26,7 @@ For information on Waiting until elements are present in the HTML see:
 """
 
 import re
+import time
 import logging
 from typing import Any
 from behave import when, then  # pylint: disable=no-name-in-module
@@ -208,3 +209,64 @@ def step_impl(context: Any, element_name: str, text_string: str) -> None:
     )
     element.clear()
     element.send_keys(text_string)
+
+
+@when("I create a unique customer through the UI")
+def step_impl(context: Any) -> None:
+    """Create a unique customer using only the web UI."""
+    unique_id = f"bdd-create-{int(time.time() * 1000)}"
+
+    context.customer = {
+        "user_id": unique_id,
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "address": "123 Create Street",
+    }
+
+    fields = {
+        "User Id": context.customer["user_id"],
+        "First Name": context.customer["first_name"],
+        "Last Name": context.customer["last_name"],
+        "Address": context.customer["address"],
+    }
+
+    for field_name, value in fields.items():
+        element_id = ID_PREFIX + field_name.lower().replace(" ", "_")
+        element = context.driver.find_element(By.ID, element_id)
+        element.clear()
+        element.send_keys(value)
+
+    context.driver.find_element(By.ID, "create-btn").click()
+
+
+@when('I leave the "{element_name}" field empty')
+def step_impl(context: Any, element_name: str) -> None:
+    """Clear a field using only the web UI."""
+    element_id = ID_PREFIX + element_name.lower().replace(" ", "_")
+    element = context.driver.find_element(By.ID, element_id)
+    element.clear()
+
+
+@then("I should see the created customer in the results")
+def step_impl(context: Any) -> None:
+    """Verify that the created customer appears in the results panel."""
+    results = context.driver.find_element(By.ID, "search_results").text
+
+    assert context.customer["user_id"] in results
+    assert context.customer["first_name"] in results
+    assert context.customer["last_name"] in results
+    assert context.customer["address"] in results
+
+
+@then("I should see an error message")
+def step_impl(context: Any) -> None:
+    """Verify that an error message is shown without crashing the page."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda driver: driver.find_element(By.ID, "flash_message").text.strip() != ""
+    )
+
+    assert found
+
+    message = context.driver.find_element(By.ID, "flash_message").text
+    assert "Internal Server Error" not in message
+    assert message != "Success"

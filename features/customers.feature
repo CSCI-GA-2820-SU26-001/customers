@@ -1,4 +1,3 @@
-@list
 Feature: Customer Administration
 
   As an eCommerce manager
@@ -12,6 +11,7 @@ Feature: Customer Administration
   #     | C002    | Alice      | Brown     | Boston |
   #     | C003    | Bob        | Johnson   | San Francisco |
 
+@list
   Scenario: Display the Customer Administration UI and List Customers
     When I visit the "Home Page"
     Then I should see "Customer Administration" in the title
@@ -32,3 +32,21 @@ Feature: Customer Administration
   #   Then I should see "John" in the results
   #   And I should see "Alice" in the results
   #   And I should see "Bob" in the results
+
+  @create
+  Scenario: Create a customer from the admin UI
+    When I visit the "Home Page"
+    And I create a unique customer through the UI
+    Then I should see the message "Success"
+    And I should see the created customer in the results
+
+  @create
+  Scenario: Create customer with missing required data
+    When I visit the "Home Page"
+    And I set the "User Id" to "bdd-create-missing"
+    And I leave the "First Name" field empty
+    And I set the "Last Name" to "Doe"
+    And I set the "Address" to "123 Missing Street"
+    And I press the "Create" button
+    Then I should see an error message
+    And I should not see "Internal Server Error"
