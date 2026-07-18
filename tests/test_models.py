@@ -281,6 +281,19 @@ class TestCustomerModel(TestCase):
         customer = Customer()
         self.assertRaises(DataValidationError, customer.deserialize, data)
 
+    def test_deserialize_attribute_error(self):
+        """It should raise DataValidationError on AttributeError"""
+        customer = Customer()
+        data = CustomerFactory().serialize()
+
+        with patch.object(
+            Customer,
+            "_validate_non_empty_string",
+            side_effect=AttributeError("boom"),
+        ):
+            with self.assertRaises(DataValidationError):
+                customer.deserialize(data)
+
     @patch("service.models.db.session.commit")
     def test_create_database_error(self, exception_mock):
         """It should raise DataValidationError on create database error"""

@@ -137,6 +137,21 @@ def step_impl(context: Any, button: str) -> None:
     context.driver.find_element(By.ID, button_id).click()
 
 
+@then('I should see the "{field_name}" field')
+def step_impl(context: Any, field_name: str) -> None:
+    """Verify an input field exists on the page."""
+    element_id = ID_PREFIX + field_name.lower().replace(" ", "_")
+    element = context.driver.find_element(By.ID, element_id)
+    assert element.is_displayed()
+
+
+@then("I should see the results panel")
+def step_impl(context: Any) -> None:
+    """Verify the shared results panel exists."""
+    element = context.driver.find_element(By.ID, "search_results")
+    assert element.is_displayed()
+
+
 @then('I should see "{name}" in the results')
 def step_impl(context: Any, name: str) -> None:
     found = WebDriverWait(context.driver, context.wait_seconds).until(
@@ -168,8 +183,9 @@ def step_impl(context: Any, message: str) -> None:
 ##################################################################
 # This code works because of the following naming convention:
 # The id field for text input in the html is the element name
-# prefixed by ID_PREFIX so the Name field has an id='pet_name'
-# We can then lowercase the name and prefix with pet_ to get the id
+# prefixed by ID_PREFIX so the Name field has an id='customer_name'
+# We can then lowercase the name and prefix with customer_ to get
+# the id
 ##################################################################
 
 
