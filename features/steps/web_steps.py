@@ -270,3 +270,11 @@ def step_impl(context: Any) -> None:
     message = context.driver.find_element(By.ID, "flash_message").text
     assert "Internal Server Error" not in message
     assert message != "Success"
+
+
+@when('I set the "User Id" to the created customer user id')
+def step_impl(context: Any) -> None:
+    """Set the User Id field to the user_id of the customer created through the UI."""
+    element = context.driver.find_element(By.ID, "customer_user_id")
+    element.clear()
+    element.send_keys(context.customer["user_id"])

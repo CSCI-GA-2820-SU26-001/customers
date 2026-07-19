@@ -169,8 +169,73 @@ $(function () {
 
     });
 
-    $("#retrieve-btn").click(function () {
-        flash_message("Retrieve not implemented yet.");
+    // ****************************************
+    // Read a Customer
+    // ****************************************
+
+    $("#read-btn").click(function () {
+
+        $("#flash_message").empty();
+
+        let user_id = $("#customer_user_id").val();
+
+        if (!user_id) {
+            flash_message("User ID is required.");
+            return;
+        }
+
+        let ajax = $.ajax({
+            type: "GET",
+            url: `/api/customers/${user_id}`,
+            contentType: "application/json",
+            data: ""
+        });
+
+        ajax.done(function (res) {
+
+            $("#search_results").empty();
+
+            let table = '<table class="table table-striped">';
+            table += '<thead>';
+            table += '<tr>';
+            table += '<th>User ID</th>';
+            table += '<th>First Name</th>';
+            table += '<th>Last Name</th>';
+            table += '<th>Address</th>';
+            table += '</tr>';
+            table += '</thead><tbody>';
+
+            table += `
+                <tr>
+                    <td>${res.user_id}</td>
+                    <td>${res.first_name}</td>
+                    <td>${res.last_name}</td>
+                    <td>${res.address}</td>
+                </tr>
+            `;
+
+            table += "</tbody></table>";
+
+            $("#search_results").append(table);
+
+            update_form_data(res);
+            flash_message("Success");
+        });
+
+        ajax.fail(function (res) {
+
+            if (res.status === 404) {
+                flash_message("Customer not found");
+            } else if (res.responseJSON && res.responseJSON.message) {
+                flash_message(res.responseJSON.message);
+            } else if (res.responseJSON && res.responseJSON.error) {
+                flash_message(res.responseJSON.error);
+            } else {
+                flash_message("Unable to retrieve customer.");
+            }
+
+        });
+
     });
 
     $("#update-btn").click(function () {
