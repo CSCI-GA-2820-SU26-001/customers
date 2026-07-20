@@ -102,7 +102,7 @@ $(function () {
     // Placeholders for future stories
     // ****************************************
 
-        // ****************************************
+    // ****************************************
     // Create a Customer
     // ****************************************
 
@@ -238,13 +238,44 @@ $(function () {
 
     });
 
+    // ****************************************
+    // Delete a Customer
+    // ****************************************
+
+    $("#delete-btn").click(function () {
+
+        $("#flash_message").empty();
+
+        let user_id = $("#customer_user_id").val();
+
+        if (!user_id) {
+            flash_message("User ID is required.");
+            return;
+        }
+
+        let ajax = $.ajax({
+            type: "DELETE",
+            url: `/api/customers/${user_id}`,
+            contentType: "application/json",
+            data: ""
+        });
+
+        ajax.done(function (res) {
+            $("#search_results").empty();
+            clear_form_data();
+            flash_message("Success");
+        });
+
+        ajax.fail(function (res) {
+            flash_message("Server error!");
+        });
+
+    });
+
     $("#update-btn").click(function () {
         flash_message("Update not implemented yet.");
     });
 
-    $("#delete-btn").click(function () {
-        flash_message("Delete not implemented yet.");
-    });
 
     $("#query-btn").click(function () {
         flash_message("Query not implemented yet.");
