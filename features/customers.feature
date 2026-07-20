@@ -76,6 +76,29 @@ Feature: Customer Administration
     Then I should see the message "Customer not found"
     And I should not see "Internal Server Error"
 
+  @delete
+  Scenario: Delete an existing customer from the admin UI
+    When I visit the "Home Page"
+    And I create a unique customer through the UI
+    Then I should see the message "Success"
+
+    When I press the "Clear" button
+    And I set the "User Id" to the created customer user id
+    And I press the "Delete" button
+    Then I should see the message "Success"
+
+    When I press the "Clear" button
+    And I press the "List" button
+    Then I should not see the created customer in the results
+
+  @delete
+  Scenario: Delete a customer that does not exist
+    When I visit the "Home Page"
+    And I set the "User Id" to "bdd-delete-not-found"
+    And I press the "Delete" button
+    Then I should see the message "Success"
+    And I should not see "Internal Server Error"
+
   @update
   Scenario: Update an existing customer from the admin UI
     When I visit the "Home Page"

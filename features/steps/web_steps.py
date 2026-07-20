@@ -281,6 +281,14 @@ def step_impl(context: Any) -> None:
     element.send_keys(context.customer["user_id"])
 
 
+@then("I should not see the created customer in the results")
+def step_impl(context: Any) -> None:
+    """Verify that the created customer no longer appears in the results panel."""
+    results = context.driver.find_element(By.ID, "search_results").text
+
+    assert context.customer["user_id"] not in results
+    
+    
 @when("I create the following customers through the UI")
 def step_impl(context: Any) -> None:
     """Create multiple customers through the web UI."""
