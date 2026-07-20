@@ -27,6 +27,7 @@ For information on Waiting until elements are present in the HTML see:
 
 import re
 import time
+import uuid
 import logging
 from typing import Any
 from behave import when, then  # pylint: disable=no-name-in-module
@@ -286,3 +287,39 @@ def step_impl(context: Any) -> None:
     results = context.driver.find_element(By.ID, "search_results").text
 
     assert context.customer["user_id"] not in results
+    
+    
+@when("I create the following customers through the UI")
+def step_impl(context: Any) -> None:
+    """Create multiple customers through the web UI."""
+
+    # Generate one unique suffix for this scenario
+    suffix = uuid.uuid4().hex[:8]
+
+    for row in context.table:
+
+        user_id = f'{row["user_id"]}-{suffix}'
+
+        fields = {
+            "User Id": user_id,
+            "First Name": row["first_name"],
+            "Last Name": row["last_name"],
+            "Address": row["address"],
+        }
+
+        for field_name, value in fields.items():
+            element_id = ID_PREFIX + field_name.lower().replace(" ", "_")
+            element = context.driver.find_element(By.ID, element_id)
+            element.clear()
+            element.send_keys(value)
+
+        context.driver.find_element(By.ID, "create-btn").click()
+
+        WebDriverWait(context.driver, context.wait_seconds).until(
+            expected_conditions.text_to_be_present_in_element(
+                (By.ID, "flash_message"),
+                "Success",
+            )
+        )
+
+        context.driver.find_element(By.ID, "clear-btn").click()
