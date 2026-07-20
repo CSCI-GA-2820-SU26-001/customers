@@ -11,7 +11,7 @@ Feature: Customer Administration
   #     | C002    | Alice      | Brown     | Boston |
   #     | C003    | Bob        | Johnson   | San Francisco |
 
-@list
+  @list
   Scenario: Display the Customer Administration UI and List Customers
     When I visit the "Home Page"
     Then I should see "Customer Administration" in the title
@@ -23,15 +23,21 @@ Feature: Customer Administration
     When I press the "List" button
     Then I should see the message "Success"
 
-  # Scenario: List all customers
-  #   When I visit the "Home Page"
-  #   And I create the following customers
-  #       ...
-  #       ...
-  #   And I press the "List" button
-  #   Then I should see "John" in the results
-  #   And I should see "Alice" in the results
-  #   And I should see "Bob" in the results
+  @list
+  Scenario: List all customers
+    When I visit the "Home Page"
+
+    And I create the following customers through the UI
+      | user_id | first_name | last_name | address       |
+      | C001    | John       | Smith     | New York      |
+      | C002    | Alice      | Brown     | Boston        |
+      | C003    | Bob        | Johnson   | San Francisco |
+
+    And I press the "List" button
+
+    Then I should see "John" in the results
+    And I should see "Alice" in the results
+    And I should see "Bob" in the results
 
   @create
   Scenario: Create a customer from the admin UI
@@ -67,5 +73,37 @@ Feature: Customer Administration
     When I visit the "Home Page"
     And I set the "User Id" to "bdd-read-not-found"
     And I press the "Read" button
+    Then I should see the message "Customer not found"
+    And I should not see "Internal Server Error"
+
+  @update
+  Scenario: Update an existing customer from the admin UI
+    When I visit the "Home Page"
+    And I create a unique customer through the UI
+    Then I should see the message "Success"
+
+    When I press the "Clear" button
+    And I set the "User Id" to the created customer user id
+    And I press the "Read" button
+    Then I should see the message "Success"
+
+    When I change "Address" to "456 Updated Street"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And I should see "456 Updated Street" in the results
+
+    When I press the "Clear" button
+    And I set the "User Id" to the created customer user id
+    And I press the "Read" button
+    Then I should see "456 Updated Street" in the "Address" field
+
+  @update
+  Scenario: Update a customer that does not exist
+    When I visit the "Home Page"
+    And I set the "User Id" to "bdd-update-not-found"
+    And I set the "First Name" to "John"
+    And I set the "Last Name" to "Smith"
+    And I set the "Address" to "456 Updated Street"
+    And I press the "Update" button
     Then I should see the message "Customer not found"
     And I should not see "Internal Server Error"
