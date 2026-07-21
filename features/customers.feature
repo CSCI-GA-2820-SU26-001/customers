@@ -130,3 +130,64 @@ Feature: Customer Administration
     And I press the "Update" button
     Then I should see the message "Customer not found"
     And I should not see "Internal Server Error"
+
+  @query
+  Scenario: Search customers by first name
+    When I visit the "Home Page"
+    And I create the following customers through the UI
+        | user_id | first_name | last_name | address  |
+        | Q001    | John       | Smith     | New York |
+        | Q002    | Alice      | Brown     | Boston   |
+        | Q003    | John       | Wilson    | Chicago  |
+    And I set the "First Name" to "John"
+    And I press the "Query" button
+    Then I should see "Smith" in the results
+    And I should see "Wilson" in the results
+    And I should not see "Brown" in the results
+
+  @query
+  Scenario: Search customers by last name
+    When I visit the "Home Page"
+    And I create the following customers through the UI
+        | user_id | first_name | last_name | address  |
+        | Q011    | John       | Smith     | New York |
+        | Q012    | Alice      | Brown     | Boston   |
+    And I set the "Last Name" to "Brown"
+    And I press the "Query" button
+    Then I should see "Alice" in the results
+    And I should not see "John" in the results
+
+  @query
+  Scenario: Search customers by first and last name
+    When I visit the "Home Page"
+    And I create the following customers through the UI
+        | user_id | first_name | last_name | address  |
+        | Q021    | John       | Smith     | New York |
+        | Q022    | John       | Wilson    | Chicago  |
+    And I set the "First Name" to "John"
+    And I set the "Last Name" to "Wilson"
+    And I press the "Query" button
+    Then I should see "Wilson" in the results
+    And I should not see "Smith" in the results
+
+  @query
+  Scenario: Search with no matching customers
+    When I visit the "Home Page"
+
+    # Query by first name
+    And I set the "First Name" to "bdd-queryF-not-found"
+    And I press the "Query" button
+    Then I should see the message "No customers found"
+    When I press the "Clear" button
+
+    # Query by last name
+    And I set the "Last Name" to "bdd-queryL-not-found"
+    And I press the "Query" button
+    Then I should see the message "No customers found"
+    When I press the "Clear" button
+
+    # Query by first and last name
+    And I set the "First Name" to "bdd-queryF-not-found"
+    And I set the "Last Name" to "bdd-queryL-not-found"
+    And I press the "Query" button
+    Then I should see the message "No customers found"

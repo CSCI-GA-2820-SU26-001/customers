@@ -341,9 +341,89 @@ $(function () {
 
     });
 
+    // ****************************************
+    // Query Customers
+    // ****************************************
 
     $("#query-btn").click(function () {
-        flash_message("Query not implemented yet.");
+        
+        $("#flash_message").empty();
+
+        let first_name = $("#customer_first_name").val().trim();
+        let last_name = $("#customer_last_name").val().trim();
+
+        let query = [];
+
+        if (first_name !== "") {
+            query.push("first_name=" + encodeURIComponent(first_name));
+        }
+
+        if (last_name !== "") {
+            query.push("last_name=" + encodeURIComponent(last_name));
+        }
+
+        let url = "/api/customers";
+
+        if (query.length > 0) {
+            url += "?" + query.join("&");
+        }
+
+        let ajax = $.ajax({
+            type: "GET",
+            url: url,
+            contentType: "application/json",
+            data: ""
+        });
+
+        ajax.done(function (res) {
+
+            $("#search_results").empty();
+
+            if (res.length === 0) {
+                flash_message("No customers found");
+                return;
+            }
+
+            let table = '<table class="table table-striped">';
+            table += "<thead>";
+            table += "<tr>";
+            table += "<th>User ID</th>";
+            table += "<th>First Name</th>";
+            table += "<th>Last Name</th>";
+            table += "<th>Address</th>";
+            table += "</tr>";
+            table += "</thead><tbody>";
+
+            for (let i = 0; i < res.length; i++) {
+
+                let customer = res[i];
+
+                table += `
+                    <tr>
+                        <td>${customer.user_id}</td>
+                        <td>${customer.first_name}</td>
+                        <td>${customer.last_name}</td>
+                        <td>${customer.address}</td>
+                    </tr>
+                `;
+            }
+
+            table += "</tbody></table>";
+
+            $("#search_results").append(table);
+
+            flash_message("Success");
+        });
+
+        ajax.fail(function (res) {
+
+            if (res.responseJSON && res.responseJSON.message) {
+                flash_message(res.responseJSON.message);
+            } else {
+                flash_message("Unable to query customers.");
+            }
+
+        });
     });
 
     $("#suspend-btn").click(function () {
