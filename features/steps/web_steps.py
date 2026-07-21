@@ -287,8 +287,8 @@ def step_impl(context: Any) -> None:
     results = context.driver.find_element(By.ID, "search_results").text
 
     assert context.customer["user_id"] not in results
-    
-    
+
+
 @when("I create the following customers through the UI")
 def step_impl(context: Any) -> None:
     """Create multiple customers through the web UI."""
@@ -323,3 +323,15 @@ def step_impl(context: Any) -> None:
         )
 
         context.driver.find_element(By.ID, "clear-btn").click()
+
+
+@then("I should see the created customer suspended in the results")
+def step_impl(context: Any) -> None:
+    """Verify that the created customer appears as suspended in the results panel."""
+    results = context.driver.find_element(By.ID, "search_results").text
+
+    assert context.customer["user_id"] in results
+    assert context.customer["first_name"] in results
+    assert context.customer["last_name"] in results
+    assert context.customer["address"] in results
+    assert "true" in results.lower()

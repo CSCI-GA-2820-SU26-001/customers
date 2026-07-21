@@ -191,3 +191,22 @@ Feature: Customer Administration
     And I set the "Last Name" to "bdd-queryL-not-found"
     And I press the "Query" button
     Then I should see the message "No customers found"
+
+  @suspend
+  Scenario: Suspend an existing customer from the admin UI
+    When I visit the "Home Page"
+    And I create a unique customer through the UI
+    Then I should see the message "Success"
+    When I press the "Clear" button
+    And I set the "User Id" to the created customer user id
+    And I press the "Suspend" button
+    Then I should see the message "Success"
+    And I should see the created customer suspended in the results
+
+  @suspend
+  Scenario: Suspend a customer that does not exist
+    When I visit the "Home Page"
+    And I set the "User Id" to "bdd-suspend-not-found"
+    And I press the "Suspend" button
+    Then I should see the message "Customer not found"
+    And I should not see "Internal Server Error"
