@@ -3,6 +3,29 @@ kind: Pipeline
 metadata:
   name: customers
 spec:
+  params:
+    - name: repo-url
+      type: string
+      description: The Git repository URL to clone
+    - name: revision
+      type: string
+      description: The Git revision to clone
+      default: master
   workspaces:
     - name: pipeline-workspace
-  tasks: []
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+        - name: subdirectory
+          value: customers
+        - name: deleteExisting
+          value: "true"
