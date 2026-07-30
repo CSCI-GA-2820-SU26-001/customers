@@ -29,3 +29,11 @@ spec:
           value: customers
         - name: deleteExisting
           value: "true"
+    - name: lint
+      taskRef:
+        name: lint
+      runAfter:
+        - clone
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
