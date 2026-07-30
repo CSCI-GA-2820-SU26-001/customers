@@ -37,3 +37,11 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
+    - name: test
+      taskRef:
+        name: test
+      runAfter:
+        - clone
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
