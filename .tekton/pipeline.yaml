@@ -45,3 +45,17 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
+    - name: build
+      taskRef:
+        name: buildah
+      runAfter:
+        - lint
+        - test
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/customers:$(tasks.clone.results.commit)
+        - name: CONTEXT
+          value: customers
