@@ -1,0 +1,10 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: customers
+spec:
+  to:
+    kind: Service
+    name: customers
+  port:
+    targetPort: 8080          # adjust to whatever port your app listens on
