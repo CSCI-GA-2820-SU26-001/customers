@@ -303,6 +303,7 @@ spec:
           --cov-report=term-missing \
           --cov-fail-under=95 \
           --disable-warnings
+---
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
