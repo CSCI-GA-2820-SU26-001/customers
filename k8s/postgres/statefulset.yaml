@@ -52,4 +52,5 @@ spec:
             memory: "64Mi"
       volumes:
       - name: postgres-storage
-        emptyDir: {}        # world‑writable, no permission problems
+        persistentVolumeClaim:
+          claimName: postgres-pvc                  # uses the existing PVC
