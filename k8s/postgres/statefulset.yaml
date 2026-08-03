@@ -38,9 +38,11 @@ spec:
             configMapKeyRef:
               name: postgres-config
               key: postgres_db
+        - name: PGDATA
+          value: /var/lib/postgresql/pgdata   # subdirectory to avoid any root‑level issues
         volumeMounts:
         - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
+          mountPath: /var/lib/postgresql
         resources:
           limits:
             cpu: "0.50"
@@ -50,5 +52,4 @@ spec:
             memory: "64Mi"
       volumes:
       - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        emptyDir: {}        # world‑writable, no permission problems
