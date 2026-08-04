@@ -61,6 +61,31 @@ tests/                          - all test cases
 └── test_routes.py              - tests for the HTTP API endpoints
 ```
 
+## CI/CD Pipeline
+
+This project deploys to OpenShift using a Tekton pipeline defined in `.tekton/`. Apply the pipeline, tasks, and workspace with:
+
+```bash
+oc apply -f .tekton/
+```
+
+The pipeline is triggered automatically by a GitHub webhook. Apply the EventListener, TriggerBinding, TriggerTemplate, and Route with:
+
+```bash
+oc apply -f .tekton/events/
+```
+
+### GitHub Webhook Setup
+
+The EventListener authenticates incoming GitHub payloads using a Kubernetes Secret named `github-webhook-secret`. This Secret is intentionally **not** committed to the repository. Before applying `.tekton/events/`, create it manually in the target namespace:
+
+```bash
+oc create secret generic github-webhook-secret \
+  --from-literal=secretToken=<WEBHOOK_SECRET>
+```
+
+Use the same `<WEBHOOK_SECRET>` value in the GitHub repo's Settings → Webhooks → Secret field. Payload URL should point to the `el-github-listener` Route, content type `application/json`, event: `push` only.
+
 ## The Customer Model (`service/models.py`)
 
 This file defines how a Customer is stored in and retrieved from the database. Key things it can do:
