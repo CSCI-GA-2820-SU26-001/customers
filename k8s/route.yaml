@@ -7,4 +7,7 @@ spec:
     kind: Service
     name: customers
   port:
-    targetPort: 8080          # adjust to whatever port your app listens on
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
