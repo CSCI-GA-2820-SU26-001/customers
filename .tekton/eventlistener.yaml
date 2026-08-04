@@ -1,0 +1,27 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - name: github-push-trigger
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: github-webhook-secret
+                secretKey: secretToken
+            - name: "eventTypes"
+              value: ["push"]
+        - ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: "body.ref == 'refs/heads/master'"
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: github-push-template

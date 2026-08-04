@@ -1,0 +1,30 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-push-template
+spec:
+  params:
+    - name: git-repo-url
+      description: The git repository url
+    - name: git-revision
+      description: The commit SHA that triggered the push
+      default: master
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: customers-push-
+      spec:
+        pipelineRef:
+          name: customers
+        params:
+          - name: repo-url
+            value: $(tt.params.git-repo-url)
+          - name: revision
+            value: $(tt.params.git-revision)
+          - name: BASE_URL
+            value: https://customers-nyu-customers-dev.apps.rm2.thpm.p1.openshiftapps.com
+        workspaces:
+          - name: pipeline-workspace
+            persistentVolumeClaim:
+              claimName: pipeline-pvc
