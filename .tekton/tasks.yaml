@@ -507,3 +507,102 @@ spec:
         kubectl rollout status deployment/customers --timeout=120s
 
         echo "***** Deployment successful *****"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: bdd
+spec:
+  description: Run BDD integration tests against the deployed customers service
+  params:
+    - name: BASE_URL
+      type: string
+      description: The OpenShift Route URL used by the BDD tests
+      default: ""
+  workspaces:
+    - name: source
+  steps:
+    - name: bdd
+      image: quay.io/rofrano/pipeline-selenium:sp26
+      workingDir: $(workspaces.source.path)/customers
+      env:
+        - name: BASE_URL
+          value: $(params.BASE_URL)
+        - name: DRIVER
+          value: chrome
+        - name: WAIT_SECONDS
+          value: "30"
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        if [[ -z "${BASE_URL//[[:space:]]/}" ]]; then
+          echo "ERROR: BASE_URL is required for BDD integration tests."
+          exit 1
+        fi
+
+        case "${BASE_URL}" in
+          http://*|https://*)
+            ;;
+          *)
+            echo "ERROR: BASE_URL must start with http:// or https://."
+            echo "Received: ${BASE_URL}"
+            exit 1
+            ;;
+        esac
+
+        BASE_URL="${BASE_URL%/}"
+        export BASE_URL
+
+        echo "***** Waiting for the deployed service *****"
+        echo "Health URL: ${BASE_URL}/health"
+
+        python - <<'PY'
+        import json
+        import os
+        import sys
+        import time
+        import urllib.request
+
+        base_url = os.environ["BASE_URL"].rstrip("/")
+        health_url = f"{base_url}/health"
+        last_error = "No response received"
+
+        for attempt in range(1, 13):
+            try:
+                with urllib.request.urlopen(health_url, timeout=5) as response:
+                    body = response.read().decode("utf-8")
+                    payload = json.loads(body)
+
+                    if response.status == 200 and payload.get("status") == "OK":
+                        print(f"Service is ready: {health_url}")
+                        break
+
+                    last_error = (
+                        f"HTTP {response.status}, response body: {body}"
+                    )
+            except Exception as error:
+                last_error = str(error)
+
+            print(
+                f"Attempt {attempt}/12: service is not ready: "
+                f"{last_error}"
+            )
+            time.sleep(5)
+        else:
+            print(
+                f"ERROR: Service did not become ready at {health_url}. "
+                f"Last error: {last_error}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        PY
+
+        echo "***** Installing BDD dependencies *****"
+        python -m pip install --upgrade pip pipenv
+        pipenv install --system --dev --deploy
+
+        echo "***** Running BDD integration tests *****"
+        behave --no-capture
+
+        echo "***** BDD integration tests passed *****"

@@ -11,6 +11,10 @@ spec:
       type: string
       description: The Git revision to clone
       default: master
+    - name: BASE_URL
+      type: string
+      description: The OpenShift Route URL used by the BDD tests
+      default: ""
   workspaces:
     - name: pipeline-workspace
   tasks:
@@ -67,6 +71,17 @@ spec:
       params:
         - name: image
           value: "$(tasks.build.results.IMAGE_URL)"
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: bdd
+      taskRef:
+        name: bdd
+      runAfter:
+        - deploy
+      params:
+        - name: BASE_URL
+          value: $(params.BASE_URL)
       workspaces:
         - name: source
           workspace: pipeline-workspace
