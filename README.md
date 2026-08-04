@@ -5,137 +5,161 @@
 [![CI](https://github.com/CSCI-GA-2820-SU26-001/customers/actions/workflows/ci.yml/badge.svg)](https://github.com/CSCI-GA-2820-SU26-001/customers/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/CSCI-GA-2820-SU26-001/customers/branch/master/graph/badge.svg)](https://codecov.io/gh/CSCI-GA-2820-SU26-001/customers)
 
-A RESTful microservice for managing customer data, built with Flask and PostgreSQL as part of the NYU DevOps course.
+A production-style Customers microservice built for NYU CSCI-GA.2820 DevOps and Agile Methodologies. The project includes a Flask-RESTX API, an administrative web UI, PostgreSQL persistence, automated unit and browser-based BDD tests, local Kubernetes deployment, GitHub Actions CI, and a six-stage Tekton CD pipeline on Red Hat OpenShift.
 
 ## Overview
 
-This service manages **Customer** records in a PostgreSQL database. Each customer has:
+The service manages Customer records with the following fields:
 
-- `user_id` — a unique string identifier (e.g., `"user42"`)
-- `first_name` — the customer's first name
-- `last_name` — the customer's last name
-- `address` — the customer's street address
-- `suspended` — a boolean flag that indicates whether the customer account is suspended. New customers default to `false`.
+- `user_id` — unique customer identifier
+- `first_name` — customer first name
+- `last_name` — customer last name
+- `address` — customer street address
+- `suspended` — whether the account is suspended; defaults to `false`
 
-The service is built following **Test-Driven Development (TDD)**: tests are written first, then code is written to make those tests pass.
+The completed application provides:
+
+- A browser-based administrative UI at `/`
+- A Flask-RESTX REST API under `/api`
+- Swagger/OpenAPI documentation at `/apidocs/`
+- PostgreSQL persistence
+- Query support by first name, last name, or both
+- A stateful Suspend action
+- Unit testing with pytest and coverage
+- Browser-based BDD testing with Behave, Selenium, and headless Chrome
+- GitHub Actions continuous integration
+- A six-stage Tekton continuous delivery pipeline on OpenShift
+- Automatic pipeline triggering on pushes to `master`
+
+The service is built following **Test-Driven Development (TDD)**: tests are written first, then implementation is added to make the tests pass.
 
 ## Project Structure
 
 ```text
-.gitignore               - files Git should ignore
-.flaskenv                - environment variables for Flask (e.g., which app to run)
-.gitattributes           - fixes line-ending issues between Mac/Windows
-.devcontainer/           - config for VSCode Dev Containers (cloud dev environment)
-dot-env-example          - copy to .env to set local environment variables
-Dockerfile               - production image for the Customers service
-Makefile                 - common commands for testing, linting, building, pushing, and deploying
-Pipfile                  - Python package dependencies
+.gitignore                           - files Git should ignore
+.flaskenv                            - Flask environment configuration
+.gitattributes                       - repository line-ending configuration
+.devcontainer/                       - VS Code Dev Container configuration
+dot-env-example                      - example local environment variables
 
-k8s/                            - Kubernetes manifests for local deployment
-├── deployment.yaml             - Customers service Deployment
-├── service.yaml                - Customers service ClusterIP Service
-├── ingress.yaml                - Ingress for external access
-└── postgres/                   - PostgreSQL Kubernetes manifests
-    ├── configmap.yaml          - PostgreSQL configuration
-    ├── pvc.yaml                - persistent volume claim for database storage
-    ├── secret.yaml             - PostgreSQL credentials and database URI
-    ├── service.yaml            - PostgreSQL ClusterIP Service
-    └── statefulset.yaml        - PostgreSQL StatefulSet
+.github/
+└── workflows/
+    └── ci.yml                      - GitHub Actions CI workflow
 
-service/                        - the main application package
-├── __init__.py                 - initializes the Flask app
-├── config.py                   - app configuration (database URL, etc.)
-├── models.py                   - Customer data model + database logic
-├── routes.py                   - HTTP API endpoints for customers
+.tekton/
+├── pipeline.yaml                   - six-stage Tekton CD pipeline
+├── tasks.yaml                      - custom Tekton Task definitions
+├── workspace.yaml                  - shared pipeline PVC
+└── events/
+    ├── eventlistener.yaml          - receives GitHub webhook events
+    ├── route-eventlistener.yaml    - public OpenShift Route for the listener
+    ├── triggerbinding.yaml         - extracts repository URL and revision
+    └── triggertemplate.yaml        - creates a PipelineRun
+
+features/                            - Behave BDD test suite
+├── customers.feature               - Gherkin scenarios
+├── environment.py                  - Behave environment and browser setup
+└── steps/
+    └── web_steps.py                - shared browser interaction steps
+
+k8s/                                - Kubernetes and OpenShift manifests
+├── deployment.yaml                 - Customers Deployment
+├── service.yaml                    - Customers Service
+├── ingress.yaml                    - local Kubernetes ingress
+├── route.yaml                      - OpenShift application Route
+└── postgres/                       - PostgreSQL manifests
+
+service/
+├── __init__.py                     - Flask application initialization
+├── config.py                       - application configuration
+├── models.py                       - Customer model and database logic
+├── routes.py                       - Flask-RESTX API routes
+├── static/                         - administrative UI assets
 └── common/
-    ├── cli_commands.py         - Flask CLI command to recreate database tables
-    ├── error_handlers.py       - handles HTTP errors (404, 400, etc.)
-    ├── log_handlers.py         - sets up logging
-    └── status.py               - HTTP status code constants (200, 201, 404, etc.)
+    ├── cli_commands.py              - Flask CLI commands
+    ├── error_handlers.py            - HTTP error handling
+    ├── log_handlers.py              - application logging
+    └── status.py                    - HTTP status constants
 
-tests/                          - all test cases
-├── __init__.py                 - makes tests a Python package
-├── factories.py                - generates fake Customer objects for testing
-├── test_cli_commands.py        - tests for CLI commands
-├── test_models.py              - tests for the Customer model (database logic)
-└── test_routes.py              - tests for the HTTP API endpoints
+tests/
+├── __init__.py                     - makes tests a Python package
+├── factories.py                    - factory-boy test data
+├── test_cli_commands.py            - CLI command tests
+├── test_models.py                  - model tests
+└── test_routes.py                  - API and route tests
+
+Dockerfile                          - production container image
+Makefile                            - test, lint, build, push, and deploy commands
+Pipfile / Pipfile.lock              - Python dependencies
+README.md                           - project documentation
 ```
 
-## CI/CD Pipeline
+The Kubernetes manifests are stored in the `./k8s/` path. Here, `./k8s/` and `k8s/` refer to the same project directory.
 
-This project deploys to OpenShift using a Tekton pipeline defined in `.tekton/`. Apply the pipeline, tasks, and workspace with:
+## Customer Model
 
-```bash
-oc apply -f .tekton/
-```
+The Customer model supports:
 
-The pipeline is triggered automatically by a GitHub webhook. Apply the EventListener, TriggerBinding, TriggerTemplate, and Route with:
+Key model methods include `create()`, `update()`, `delete()`, `serialize()`, `deserialize()`, `all()`, `find()`, `find_by_first_name()`, `find_by_last_name()`, and `find_by_name()`.
 
-```bash
-oc apply -f .tekton/events/
-```
+- Create, read, update, and delete operations
+- Listing all customers
+- Querying by first name
+- Querying by last name
+- Querying by first and last name together
+- Serializing database objects to dictionaries
+- Deserializing and validating request data
+- Suspending a customer account
 
-### GitHub Webhook Setup
+`user_id`, `first_name`, `last_name`, and `address` are required and must be non-empty strings. The `suspended` field is optional when creating a customer, defaults to `false`, and must be a boolean when provided.
 
-The EventListener authenticates incoming GitHub payloads using a Kubernetes Secret named `github-webhook-secret`. This Secret is intentionally **not** committed to the repository. Before applying `.tekton/events/`, create it manually in the target namespace:
+Character limits are enforced at the database level:
 
-```bash
-oc create secret generic github-webhook-secret \
-  --from-literal=secretToken=<WEBHOOK_SECRET>
-```
+- `user_id`: 63 characters
+- `first_name`: 63 characters
+- `last_name`: 63 characters
+- `address`: 256 characters
 
-Use the same `<WEBHOOK_SECRET>` value in the GitHub repo's Settings → Webhooks → Secret field. Payload URL should point to the `el-github-listener` Route, content type `application/json`, event: `push` only.
+## Administrative Web UI
 
-## The Customer Model (`service/models.py`)
+The root URL `/` serves an administrative interface for managing customers. The UI supports:
 
-This file defines how a Customer is stored in and retrieved from the database. Key things it can do:
+- List
+- Create
+- Read
+- Update
+- Delete
+- Query
+- Suspend
 
-- **`create()`** — saves a new customer to the database
-- **`update()`** — saves changes to an existing customer
-- **`delete()`** — removes a customer from the database
-- **`serialize()`** — converts a Customer object into a plain dictionary so it can be sent as JSON
-- **`deserialize(data)`** — converts a dictionary from a JSON request into a Customer object, with validation
-- **`Customer.all()`** — returns every customer in the database
-- **`Customer.find(user_id)`** — looks up a single customer by their `user_id`
-- **`Customer.find_by_first_name(first_name)`** — returns customers with a matching first name
-- **`Customer.find_by_last_name(last_name)`** — returns customers with a matching last name
-- **`Customer.find_by_name(first_name, last_name)`** — returns customers that match both first name and last name
+The BDD suite tests the UI from the outside through the browser. It does not connect directly to the application internals or database.
 
-`user_id`, `first_name`, `last_name`, and `address` are required and must be non-empty strings. If any required field is missing or blank, a `DataValidationError` is raised.
+## REST API
 
-The `suspended` field is optional on create and defaults to `false`. If provided, `suspended` must be a boolean.
+All REST resources use the `/api` prefix. Responses with a body are JSON. Requests with a body must use `Content-Type: application/json`.
 
-Character limits are enforced at the database level: `user_id`, `first_name`, and `last_name` are capped at 63 characters; `address` is capped at 256 characters.
+| Method | URL | Description | Success |
+|---|---|---|---|
+| GET | `/` | Customer Administration UI | `200 OK` |
+| GET | `/health` | Kubernetes health check | `200 OK` |
+| GET | `/apidocs/` | Swagger/OpenAPI documentation | `200 OK` |
+| POST | `/api/customers` | Create a customer | `201 Created` |
+| GET | `/api/customers` | List all customers | `200 OK` |
+| GET | `/api/customers?first_name={first_name}` | Query by first name | `200 OK` |
+| GET | `/api/customers?last_name={last_name}` | Query by last name | `200 OK` |
+| GET | `/api/customers?first_name={first_name}&last_name={last_name}` | Query by full name | `200 OK` |
+| GET | `/api/customers/{user_id}` | Read a customer | `200 OK` |
+| PUT | `/api/customers/{user_id}` | Update a customer | `200 OK` |
+| PUT | `/api/customers/{user_id}/suspend` | Suspend a customer | `200 OK` |
+| DELETE | `/api/customers/{user_id}` | Delete a customer | `204 No Content` |
 
-## The API (`service/routes.py`)
-
-All responses with a body are returned as JSON. DELETE returns `204 No Content` with an empty body. The `Content-Type` header must be `application/json` for any request that sends a body, such as POST and PUT.
-
-| Method | URL | Description | Success Code |
-| -------- | ----- | ------------- | -------------- |
-| GET | `/` | Service info | `200 OK` |
-| GET | `/health` | Health check for Kubernetes liveness/readiness probes | `200 OK` |
-| POST | `/customers` | Create a new customer | `201 Created` |
-| GET | `/customers` | List all customers | `200 OK` |
-| GET | `/customers?first_name={first_name}` | Query customers by first name | `200 OK` |
-| GET | `/customers?last_name={last_name}` | Query customers by last name | `200 OK` |
-| GET | `/customers?first_name={first_name}&last_name={last_name}` | Query customers by first and last name | `200 OK` |
-| GET | `/customers/{user_id}` | Read a single customer | `200 OK` |
-| PUT | `/customers/{user_id}` | Update an existing customer | `200 OK` |
-| PUT | `/customers/{user_id}/suspend` | Suspend an existing customer account | `200 OK` |
-| DELETE | `/customers/{user_id}` | Delete a customer | `204 No Content` |
-
-### Health check
-
-**Health check — `GET /health`**
-
-Request:
+### Health Check
 
 ```bash
 curl -i http://localhost:8080/health
 ```
 
-Response (`200 OK`):
+Expected response:
 
 ```json
 {
@@ -143,461 +167,437 @@ Response (`200 OK`):
 }
 ```
 
-This endpoint is used by Kubernetes liveness and readiness probes.
-
-### Create a customer
-
-**Create a customer — `POST /customers`**
-
-Request:
+### Create a Customer
 
 ```bash
-curl -i -X POST http://localhost:8080/customers \
+curl -i -X POST http://localhost:8080/api/customers \
   -H "Content-Type: application/json" \
-  -d '{"user_id":"user42","first_name":"John","last_name":"Doe","address":"123 Main Street"}'
-```
-
-Request body:
-
-```json
-{
-  "user_id": "user42",
-  "first_name": "John",
-  "last_name": "Doe",
-  "address": "123 Main Street"
-}
-```
-
-Response (`201 Created`):
-
-```json
-{
-  "address": "123 Main Street",
-  "first_name": "John",
-  "last_name": "Doe",
-  "suspended": false,
-  "user_id": "user42"
-}
-```
-
-The response includes a `Location` header that points to the newly created customer resource:
-
-```text
-Location: /customers/user42
-```
-
-The `suspended` field may also be included in the request body. If it is omitted, it defaults to `false`.
-
-### List and query customers
-
-Query support extends the existing `GET /customers` List endpoint by applying optional query string filters. It is not a separate endpoint.
-
-**List all customers — `GET /customers`**
-
-Request:
-
-```bash
-curl -i http://localhost:8080/customers
-```
-
-Response (`200 OK`):
-
-```json
-[
-  {
-    "address": "123 Main Street",
+  -d '{
+    "user_id": "user42",
     "first_name": "John",
     "last_name": "Doe",
-    "suspended": false,
-    "user_id": "user42"
-  }
-]
+    "address": "123 Main Street"
+  }'
 ```
 
-If no customers exist, the service returns an empty list:
+A successful response returns `201 Created`. The `Location` header points to:
+
+```text
+/api/customers/user42
+```
+
+### List Customers
+
+```bash
+curl -i http://localhost:8080/api/customers
+```
+
+If no customers exist, the API returns:
 
 ```json
 []
 ```
 
-**Query customers by first name**
+### Query Customers
 
-Request:
-
-```bash
-curl -i "http://localhost:8080/customers?first_name=John"
-```
-
-Response (`200 OK`):
-
-```json
-[
-  {
-    "address": "123 Main Street",
-    "first_name": "John",
-    "last_name": "Doe",
-    "suspended": false,
-    "user_id": "user42"
-  }
-]
-```
-
-**Query customers by last name**
-
-Request:
+By first name:
 
 ```bash
-curl -i "http://localhost:8080/customers?last_name=Doe"
+curl -i "http://localhost:8080/api/customers?first_name=John"
 ```
 
-Response (`200 OK`):
-
-```json
-[
-  {
-    "address": "123 Main Street",
-    "first_name": "John",
-    "last_name": "Doe",
-    "suspended": false,
-    "user_id": "user42"
-  }
-]
-```
-
-**Query customers by first name and last name**
-
-Request:
+By last name:
 
 ```bash
-curl -i "http://localhost:8080/customers?first_name=John&last_name=Doe"
+curl -i "http://localhost:8080/api/customers?last_name=Doe"
 ```
 
-Response (`200 OK`):
-
-```json
-[
-  {
-    "address": "123 Main Street",
-    "first_name": "John",
-    "last_name": "Doe",
-    "suspended": false,
-    "user_id": "user42"
-  }
-]
-```
-
-If no customers match the query, the service returns an empty list:
-
-```json
-[]
-```
-
-### Read a customer
-
-**Read a customer — `GET /customers/{user_id}`**
-
-Request:
+By first and last name:
 
 ```bash
-curl -i http://localhost:8080/customers/user42
+curl -i "http://localhost:8080/api/customers?first_name=John&last_name=Doe"
 ```
 
-Response (`200 OK`):
-
-```json
-{
-  "address": "123 Main Street",
-  "first_name": "John",
-  "last_name": "Doe",
-  "suspended": false,
-  "user_id": "user42"
-}
-```
-
-If the customer does not exist, the service returns `404 Not Found`.
-
-### Update a customer
-
-**Update a customer — `PUT /customers/{user_id}`**
-
-Request:
+### Read a Customer
 
 ```bash
-curl -i -X PUT http://localhost:8080/customers/user42 \
+curl -i http://localhost:8080/api/customers/user42
+```
+
+A missing customer returns `404 Not Found`.
+
+### Update a Customer
+
+```bash
+curl -i -X PUT http://localhost:8080/api/customers/user42 \
   -H "Content-Type: application/json" \
-  -d '{"first_name":"John","last_name":"Smith","address":"456 Elm Street"}'
+  -d '{
+    "first_name": "John",
+    "last_name": "Smith",
+    "address": "456 Elm Street"
+  }'
 ```
 
-Request body:
+The `user_id` is taken from the URL path.
 
-```json
-{
-  "first_name": "John",
-  "last_name": "Smith",
-  "address": "456 Elm Street"
-}
-```
-
-Response (`200 OK`):
-
-```json
-{
-  "address": "456 Elm Street",
-  "first_name": "John",
-  "last_name": "Smith",
-  "suspended": false,
-  "user_id": "user42"
-}
-```
-
-For updates, the service uses the `user_id` from the URL path. If a different `user_id` is provided in the request body, it is ignored.
-
-### Suspend a customer
-
-**Suspend a customer — `PUT /customers/{user_id}/suspend`**
-
-This action marks an existing customer account as suspended. It does not delete the customer record.
-
-Request:
+### Suspend a Customer
 
 ```bash
-curl -i -X PUT http://localhost:8080/customers/user42/suspend
+curl -i -X PUT http://localhost:8080/api/customers/user42/suspend
 ```
 
-Response (`200 OK`):
+A successful response includes `"suspended": true`. The customer remains available through the Read endpoint.
 
-```json
-{
-  "address": "123 Main Street",
-  "first_name": "John",
-  "last_name": "Doe",
-  "suspended": true,
-  "user_id": "user42"
-}
-```
-
-A suspended customer can still be retrieved with `GET /customers/{user_id}`. The response will include `"suspended": true`.
-
-If the customer does not exist, the service returns `404 Not Found`.
-
-### Delete a customer
-
-**Delete a customer — `DELETE /customers/{user_id}`**
-
-Request:
+### Delete a Customer
 
 ```bash
-curl -i -X DELETE http://localhost:8080/customers/user42
+curl -i -X DELETE http://localhost:8080/api/customers/user42
 ```
 
-Response:
+DELETE returns `204 No Content`. The operation is idempotent: deleting a missing customer also returns `204 No Content`.
 
-```text
-HTTP/1.1 204 No Content
-```
+### Error Responses
 
-DELETE is idempotent. Whether the customer exists or not, the response is always `204 No Content` with an empty body.
+API errors are returned as JSON and include `status`, `error`, and `message`.
 
-### Validation and error responses
-
-For create requests, `user_id`, `first_name`, `last_name`, and `address` are required and must be non-empty strings. The `suspended` field is optional and defaults to `false`. If `suspended` is provided, it must be a boolean.
-
-For update requests, `first_name`, `last_name`, and `address` are required in the request body, and the `user_id` is taken from the URL path.
-
-All API error responses are returned as JSON with `status`, `error`, and `message` fields.
-
-Common error codes used by this service:
-
-| Status Code | Meaning |
-| -------- | -------- |
-| `400 Bad Request` | Missing or blank fields, invalid data, or invalid `suspended` value |
+| Status | Meaning |
+|---|---|
+| `400 Bad Request` | Missing, blank, or invalid data |
 | `404 Not Found` | Customer not found |
-| `405 Method Not Allowed` | Unsupported HTTP method on a route |
-| `409 Conflict` | Duplicate `user_id` on create |
-| `415 Unsupported Media Type` | Missing or wrong `Content-Type` header |
+| `405 Method Not Allowed` | Unsupported method |
+| `409 Conflict` | Duplicate `user_id` |
+| `415 Unsupported Media Type` | Missing or incorrect content type |
 | `500 Internal Server Error` | Unexpected server error |
 
-Example error response:
+Example:
 
 ```json
 {
+  "status": 400,
   "error": "Bad Request",
-  "message": "Invalid request data",
-  "status": 400
+  "message": "Invalid request data"
 }
 ```
 
-## Local Kubernetes Deployment
+## Swagger Documentation
 
-The service can be deployed to a local K3D/K3S Kubernetes cluster using the Makefile commands from the Kubernetes lab.
+The service uses Flask-RESTX annotations and Swagger data models to document request and response payloads.
 
-### Build and deploy locally
-
-Create a local Kubernetes cluster:
-
-```bash
-make cluster
-```
-
-Build the Customers service container image:
-
-```bash
-make build
-```
-
-Push the image to the local registry:
-
-```bash
-make push
-```
-
-Deploy PostgreSQL and the Customers service to Kubernetes:
-
-```bash
-make deploy
-```
-
-The deployment includes:
-
-- PostgreSQL running as a Kubernetes StatefulSet
-- PostgreSQL persistent storage through a PersistentVolumeClaim
-- Customers service Deployment
-- Customers service ClusterIP Service
-- Ingress for external access
-- `/health` liveness and readiness probes
-
-After deployment, verify the pods are running:
-
-```bash
-kubectl get pods
-```
-
-Expected result:
+Interactive Swagger/OpenAPI documentation is available locally at:
 
 ```text
-customers-...   1/1   Running
-postgres-0      1/1   Running
+http://localhost:8080/apidocs/
 ```
 
-Verify the service through the ingress:
+In the final OpenShift deployment:
 
-```bash
-curl -i http://localhost:8080/health
-curl -i http://localhost:8080/customers
+```text
+https://customers-nyu-customers-dev.apps.rm2.thpm.p1.openshiftapps.com/apidocs/
 ```
 
-## Tests (`tests/`)
-
-### `test_models.py`
-
-Tests the Customer model directly against the database. Covers:
-
-- Creating, finding, listing, updating, and deleting customers
-- Querying customers by first name, last name, and first name plus last name
-- Serializing and deserializing customer data
-- Default and validation behavior for the `suspended` field
-- Validation errors for missing or empty fields
-- Database error handling using mocks to simulate DB failures
-
-### `test_routes.py`
-
-Tests the HTTP API endpoints. Covers route tests for:
-
-- Create (`POST /customers`)
-- Read (`GET /customers/{user_id}`)
-- Update (`PUT /customers/{user_id}`)
-- Delete (`DELETE /customers/{user_id}`)
-- List (`GET /customers`)
-- Query (`GET /customers?first_name=...` and `GET /customers?last_name=...`)
-- Suspend (`PUT /customers/{user_id}/suspend`)
-- Health (`GET /health`)
-- Root URL (`GET /`)
-- Error handling cases, including missing or blank fields, invalid `suspended` values, customer not found, wrong HTTP method, unsupported media type, and duplicate `user_id`
-
-### `factories.py`
-
-Uses the `factory-boy` library to generate realistic fake Customer objects for use in tests. This avoids the need to hand-craft test data.
-
-## Setup
+## Local Development
 
 ### Prerequisites
 
 - Python 3.12
-- PostgreSQL running locally or via Docker dev container
+- PostgreSQL
 - Docker
-- K3D / Kubernetes for local deployment
+- Pipenv
+- K3D/K3S and Kubernetes CLI tools for local deployment
+- OpenShift CLI (`oc`) for remote deployment
 
-### Install dependencies
+### Install Dependencies
 
 ```bash
 pip install pipenv
 pipenv install --dev
 ```
 
-### Configure environment
+### Configure the Environment
 
 ```bash
 cp dot-env-example .env
-# Edit .env with your database credentials
 ```
 
-### Run the service locally
+Update `.env` with the required local database settings.
+
+### Run the Service
 
 ```bash
 honcho start
 ```
 
-The service will be available at `http://localhost:8080/`.
+The service is available at `http://localhost:8080/`.
 
-### Run the tests
+## Testing and Code Quality
+
+### Unit Tests
 
 ```bash
 make test
 ```
 
-This runs `pytest` with coverage reporting. The target is **95% coverage** minimum. You can also run pytest directly:
+The project maintains at least 95% test coverage. The latest verified pipeline run completed 64 unit tests with 100% coverage.
 
-```bash
-pipenv run pytest --cov=service
-```
+The unit-test suite includes:
 
-### Lint the code
+- `tests/test_models.py` — model CRUD, query, serialization, validation, and database error handling
+- `tests/test_routes.py` — `/api/customers` CRUD, List, Query, Suspend, health, UI root, and HTTP error responses
+- `tests/test_cli_commands.py` — Flask CLI command behavior
+- `tests/factories.py` — factory-boy data generation for test fixtures
+
+### Linting
 
 ```bash
 make lint
 ```
 
-This runs `pylint` and `flake8` to enforce PEP8 style. Fix any warnings before opening a Pull Request.
+This runs pylint and flake8. The latest verified result was `10.00/10`.
+
+### Behavior-Driven Development
+
+The Gherkin scenarios are stored in `.feature` files under the `features/` directory. Their accompanying Selenium step definitions are stored under `features/steps/`.
+
+Run the browser-based BDD suite locally with:
+
+```bash
+behave --no-capture
+```
+
+The suite covers:
+
+- Create
+- Read
+- Update
+- Delete
+- List
+- Query
+- Suspend
+
+Latest verified result:
+
+```text
+1 feature passed
+16 scenarios passed
+124 steps passed
+```
+
+The Tekton BDD Task runs the same suite against the deployed OpenShift Route using Selenium and headless Chrome. The BDD Task receives the Route through the `BASE_URL` parameter and runs only after deployment succeeds.
+
+## Local Kubernetes Deployment
+
+The Kubernetes manifests are stored in `./k8s/`.
+
+Create the local Kubernetes cluster, build and push the image, and deploy the application:
+
+```bash
+make cluster
+make build
+make push
+make deploy
+```
+
+Verify the deployment:
+
+```bash
+kubectl get pods
+kubectl get services
+kubectl get ingress
+kubectl get statefulsets
+kubectl get pvc
+```
+
+Test the service:
+
+```bash
+curl -i http://localhost:8080/health
+curl -i http://localhost:8080/api/customers
+```
+
+The local deployment includes:
+
+- PostgreSQL as a StatefulSet
+- PostgreSQL persistent storage
+- Customers Deployment
+- Customers ClusterIP Service
+- Ingress for external access
+- Liveness and readiness probes using `/health`
+
+## OpenShift Deployment
+
+The final team deployment runs in the `nyu-customers-dev` OpenShift project.
+
+Application Route:
+
+```text
+https://customers-nyu-customers-dev.apps.rm2.thpm.p1.openshiftapps.com
+```
+
+Available endpoints:
+
+- Admin UI: `/`
+- Health: `/health`
+- REST API: `/api/customers`
+- Swagger: `/apidocs/`
+
+PostgreSQL is deployed manually to the OpenShift project before the CD pipeline runs:
+
+```bash
+oc apply -f ./k8s/postgres/
+```
+
+Apply the application manifests and Route:
+
+```bash
+oc apply -f ./k8s/
+```
+
+Deploy the Tekton Pipeline, Tasks, and shared workspace:
+
+```bash
+oc apply -f .tekton/
+```
+
+Deploy the EventListener resources:
+
+```bash
+oc apply -f .tekton/events/
+```
 
 ## Continuous Integration
 
-This repository uses GitHub Actions for Continuous Integration.
+GitHub Actions runs on pull requests and pushes to `master`. The workflow performs:
 
-The CI workflow runs on pull requests and pushes to `master`. It performs:
-
-- flake8 checks
-- pylint checks
-- pytest unit tests
+- flake8
+- pylint
+- pytest
 - coverage reporting
 - Codecov upload
 
-The CI badge and Codecov badge at the top of this README show the current build and coverage status.
+Pull requests should not be merged while tests fail or coverage decreases. The CI and Codecov badges at the top of this README show the current build and coverage status.
+
+## Continuous Delivery Pipeline
+
+The Tekton pipeline contains six stages:
+
+1. `clone` — clones the GitHub repository
+2. `lint` — runs pylint and flake8
+3. `test` — runs unit tests and coverage
+4. `build` — builds and pushes the application image
+5. `deploy` — deploys the image to OpenShift
+6. `bdd` — runs Selenium/Behave tests against the deployment
+
+The `lint` and `test` Tasks run in parallel. The image is built only after both pass. Deployment runs after the build, and BDD testing runs after deployment.
+
+The pipeline uses the shared `pipeline-pvc` workspace. The BDD Task receives the deployed application Route through the `BASE_URL` parameter.
+
+## GitHub Webhook and EventListener
+
+A GitHub push to `master` automatically triggers the Tekton pipeline through the following flow:
+
+```text
+GitHub push to master
+        |
+        v
+OpenShift EventListener Route
+        |
+        v
+EventListener
+        |
+        v
+TriggerBinding + TriggerTemplate
+        |
+        v
+PipelineRun
+```
+
+EventListener Route:
+
+```text
+https://el-github-listener-nyu-customers-dev.apps.rm2.thpm.p1.openshiftapps.com
+```
+
+The EventListener:
+
+- Accepts GitHub `push` events
+- Filters for `refs/heads/master`
+- Reads the repository clone URL from the webhook payload
+- Reads the pushed commit SHA from the webhook payload
+- Creates a PipelineRun for the `customers` pipeline
+
+The EventListener validates GitHub payloads with a Kubernetes Secret. The actual Secret must never be committed.
+
+Create the Secret in the final namespace:
+
+```bash
+oc create secret generic github-webhook-secret \
+  --from-literal=secretToken=<WEBHOOK_SECRET> \
+  -n nyu-customers-dev
+```
+
+Configure the GitHub webhook with:
+
+- Payload URL: the HTTPS EventListener Route
+- Content type: `application/json`
+- Secret: the same value used in `github-webhook-secret`
+- Events: push only
+- SSL verification: enabled
+- Active: enabled
+
+## Development Workflow
+
+The project follows the course Social Coding and Agile workflow:
+
+1. Create a GitHub Story and add it to the ZenHub backlog.
+2. Assign the Story and move it to **In Progress**.
+3. Use one feature branch for one Story.
+4. Run tests and quality checks before opening a Pull Request.
+5. Open one Pull Request for the Story and link it with `Closes #<issue-number>`.
+6. Move the Story to **Review/QA** and request a teammate review.
+7. Merge only after CI passes and a teammate approves.
+8. A merge to `master` automatically triggers the Tekton CD pipeline.
+9. Move the Story to **Done** after the implementation and deployment are verified.
+10. Close completed Stories after the Sprint Review.
+
+## Validation Summary
+
+The completed project has been verified with:
+
+- 64 unit tests passed
+- 100% test coverage
+- pylint score of `10.00/10`
+- 1 BDD feature passed
+- 16 BDD scenarios passed
+- 124 BDD steps passed
+- Successful OpenShift health check returning `{"status":"OK"}`
+- A successful six-stage Tekton PipelineRun
+- A GitHub webhook configured to trigger the pipeline on pushes to `master`
 
 ## Tech Stack
 
 | Tool | Purpose |
-| ------ | --------- |
-| Flask 3.1 | Web framework — handles HTTP requests |
-| Flask-SQLAlchemy 3.1 | ORM — translates Python objects to database rows |
-| PostgreSQL / psycopg | Database |
-| pytest | Test runner |
-| factory-boy | Fake data generation for tests |
+|---|---|
+| Python 3.12 | Application language |
+| Flask 3.1 | Web application framework |
+| Flask-RESTX | REST API and Swagger documentation |
+| Flask-SQLAlchemy | ORM and database integration |
+| PostgreSQL / psycopg | Persistent database |
+| HTML / CSS / JavaScript | Administrative UI |
+| pytest | Unit testing |
+| coverage.py / Codecov | Coverage measurement and reporting |
+| factory-boy | Test data generation |
+| Behave | BDD test runner |
+| Selenium / Chrome | Browser-based UI testing |
 | gunicorn | Production web server |
-| pylint / flake8 | Code quality and formatting |
-| Docker | Container image build and runtime |
-| Kubernetes / K3D | Local container orchestration |
-| GitHub Actions | Continuous Integration |
-| Codecov | Coverage reporting |
+| pylint / flake8 | Code quality checks |
+| Docker | Container image development |
+| Buildah | Pipeline image builds |
+| Kubernetes / K3D / K3S | Local orchestration |
+| Red Hat OpenShift | Remote Kubernetes platform |
+| Tekton | Continuous delivery pipeline |
+| GitHub Actions | Continuous integration |
+| GitHub Webhooks | Automatic CD triggering |
+| ZenHub | Agile project management |
 
 ## License
 
