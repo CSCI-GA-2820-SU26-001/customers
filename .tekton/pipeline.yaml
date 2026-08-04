@@ -59,3 +59,14 @@ spec:
           value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/customers:$(tasks.clone.results.commit)
         - name: CONTEXT
           value: customers
+    - name: deploy
+      taskRef:
+        name: deploy
+      runAfter:
+        - build
+      params:
+        - name: image
+          value: "$(tasks.build.results.IMAGE_URL)"
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace

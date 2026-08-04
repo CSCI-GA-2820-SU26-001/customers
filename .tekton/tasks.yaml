@@ -475,3 +475,35 @@ spec:
     mountPath: /tmp/entitlement
     name: rhel-entitlement
     optional: true
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy
+spec:
+  params:
+    - name: image
+      type: string
+      description: Full image reference to deploy (e.g. image-registry.openshift-image-registry.svc:5000/namespace/customers:sha)
+  workspaces:
+    - name: source
+  steps:
+    - name: deploy
+      image: bitnami/kubectl:latest
+      workingDir: $(workspaces.source.path)/customers
+      script: |
+        #!/bin/bash
+        set -e
+
+        echo "***** Deploying image: $(params.image) *****"
+
+        # Apply all Kubernetes manifests from the k8s/ directory
+        kubectl apply -f k8s/
+
+        # Update the customers deployment to use the new image
+        kubectl set image deployment/customers customers=$(params.image)
+
+        # Wait for rollout to complete
+        kubectl rollout status deployment/customers --timeout=120s
+
+        echo "***** Deployment successful *****"
