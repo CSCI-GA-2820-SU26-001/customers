@@ -77,7 +77,6 @@ service/
 ├── static/                         - administrative UI assets
 └── common/
     ├── cli_commands.py              - Flask CLI commands
-    ├── error_handlers.py            - HTTP error handling
     ├── log_handlers.py              - application logging
     └── status.py                    - HTTP status constants
 
@@ -85,6 +84,7 @@ tests/
 ├── __init__.py                     - makes tests a Python package
 ├── factories.py                    - factory-boy test data
 ├── test_cli_commands.py            - CLI command tests
+├── test_log_handlers.py            - logging handler tests
 ├── test_models.py                  - model tests
 └── test_routes.py                  - API and route tests
 
@@ -344,6 +344,7 @@ The unit-test suite includes:
 - `tests/test_models.py` — model CRUD, query, serialization, validation, and database error handling
 - `tests/test_routes.py` — `/api/customers` CRUD, List, Query, Suspend, health, UI root, and HTTP error responses
 - `tests/test_cli_commands.py` — Flask CLI command behavior
+- `tests/test_log_handlers.py` — application logging handler behavior
 - `tests/factories.py` — factory-boy data generation for test fixtures
 
 ### Linting
